@@ -2,6 +2,8 @@ from pathlib import Path
 
 import requests
 
+TULULU_URl = 'https://tululu.org'
+
 
 def create_path(folder_name: str, book_name: str) -> Path:
     """Функция создает папку и возвращает её путь."""
@@ -20,20 +22,34 @@ def save_book(json, book_id: int):
         file.write(json)
 
 
+def check_for_redirect(response):
+    """Функция проверки редиректа."""
+
+    if not response.history and response.url != TULULU_URl:
+        return
+    else:
+        raise requests.HTTPError
+
+
 def get_books_file(book_id: int):
     """Функция делает запрос."""
 
-    url = f'https://tululu.org/txt.php?id={book_id}'
-    response = requests.get(url)
+    url = f'{TULULU_URl}/txt.php'
+    payload = {'id': book_id}
+    response = requests.get(url, params=payload)
     response.raise_for_status()
-
-    return response.content
+    try:
+        check_for_redirect(response)
+        return response.content
+    except requests.HTTPError:
+        print(f'Book {book_id} is not found')
 
 
 def main():
-    for book_id in range(1, 10):
+    for book_id in range(1, 11):
         book = get_books_file(book_id)
-        save_book(book, book_id)
+        if book:
+            save_book(book, book_id)
 
 
 if __name__ == '__main__':
