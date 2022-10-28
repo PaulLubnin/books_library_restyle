@@ -1,9 +1,19 @@
 from pathlib import Path
+from urllib.parse import unquote, urlsplit
 
 import requests
 from bs4 import BeautifulSoup
 
 TULULU_URl = 'https://tululu.org'
+
+
+def check_url(url: str):
+    """Проверка урла."""
+
+    unq_url = unquote(url)
+    if urlsplit(unq_url).netloc == urlsplit(TULULU_URl).netloc:
+        return
+    raise requests.HTTPError
 
 
 def create_path(folder_name: str, book_name: str) -> Path:
@@ -59,12 +69,21 @@ def fetch_book_data(book_id: int):
     return header, author
 
 
-def main():
-    for book_id in range(1, 11):
-        book = get_books_file(book_id)
-        if book:
-            save_book(book, book_id)
+def main(url: str):
+    try:
+        check_url(url)
+
+        for book_id in range(1, 11):
+            book = get_books_file(book_id)
+            if book:
+                save_book(book, book_id)
+    except requests.HTTPError:
+        print('Wrong url')
 
 
 if __name__ == '__main__':
-    main()
+    url_file = 'http://tululu.org/txt.php?id=1'
+    main(url_file)
+
+    # print(type(serialized_url(url)), serialized_url(url))
+    # print(type(serialized_url(url)), serialized_url(url)[1])
