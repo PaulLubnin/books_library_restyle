@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import requests
+from bs4 import BeautifulSoup
 
 TULULU_URl = 'https://tululu.org'
 
@@ -43,6 +44,19 @@ def get_books_file(book_id: int):
         return response.content
     except requests.HTTPError:
         print(f'Book {book_id} is not found')
+
+
+def fetch_book_data(book_id: int):
+    """Функция получения данных о книге (название, автор)"""
+
+    url = f'{TULULU_URl}/b{book_id}'
+    response = requests.get(url)
+    response.raise_for_status()
+    soup = BeautifulSoup(response.text, 'lxml')
+    title_tag = soup.find('h1')
+    serialized_book = [elem.strip() for elem in title_tag.text.split(' :: ')]
+    header, author = serialized_book
+    return header, author
 
 
 def main():
