@@ -3,16 +3,9 @@ from urllib.parse import unquote, urlsplit
 
 import requests
 from bs4 import BeautifulSoup
+from pathvalidate import sanitize_filename
 
 TULULU_URl = 'https://tululu.org'
-
-
-def check_url(url: str):
-    """Проверка урла, что сайт верный."""
-
-    if url_serializing(url)['site_name'] == url_serializing(TULULU_URl)['site_name']:
-        return
-    raise requests.HTTPError
 
 
 def url_serializing(url: str) -> dict:
@@ -20,38 +13,11 @@ def url_serializing(url: str) -> dict:
 
     unq_url = unquote(url)
     split_url = urlsplit(unq_url)
-    serialised_data = {'site_name': split_url.netloc,
-                       'site_path': split_url.path}
+    serialised_data = {'site_name': split_url.netloc}
     if split_url.query:
         query_key, book_id = split_url.query.split('=')
         serialised_data[query_key] = book_id
     return serialised_data
-
-
-def create_path(folder_name: str, book_name: str) -> Path:
-    """Функция создает папку и возвращает её путь."""
-
-    save_folder = Path.cwd() / folder_name
-    Path(save_folder).mkdir(parents=True, exist_ok=True)
-    return save_folder / book_name
-
-
-def save_book(json, book_id: int):
-    """Функция сохранения книг."""
-
-    filename = f'id{book_id}.txt'
-    book_path = create_path('books', filename)
-    with open(book_path, 'wb') as file:
-        file.write(json)
-
-
-def check_for_redirect(response):
-    """Функция проверки редиректа."""
-
-    if not response.history:
-        return
-    else:
-        raise requests.HTTPError
 
 
 def get_books_file(book_id: int):
@@ -81,23 +47,69 @@ def fetch_book_data(book_id: int):
     return header, author
 
 
-def download_txt(url: str, filename: str, folder='books/') -> str:
-    # book = get_books_file(url)
-    print(url_serializing(url))
-    return
+def download_txt(url: str, filename: str, folder: str = 'books/') -> str:
+    """Функция для скачивания текстовых файлов.
+
+    Args:
+        url (str): Cсылка на текст, который хочется скачать.
+        filename (str): Имя файла, с которым сохранять.
+        folder (str): Папка, куда сохранять.
+
+    Returns:
+        str: Путь до файла, куда сохранён текст.
+    """
+
+    check_url(url)
+    book_name = sanitize_filename(filename)
+    folder = sanitize_filename(folder)
+    book_path = f'{create_path(book_name, folder)}.txt'
+    book_id = url_serializing(url).get('id')
+    book = get_books_file(book_id)
+    save_book(book, book_path)
+    return book_path
 
 
-def main(url: str):
-    try:
-        check_url(url)
-    except requests.HTTPError:
-        print('Wrong url')
+def save_book(text: bytes, filename: str):
+    """Функция сохранения книг."""
+
+    with open(filename, 'wb') as file:
+        file.write(text)
+
+
+def create_path(book_name: str, folder_name: str, ) -> Path:
+    """Функция создает папку и возвращает её путь."""
+
+    save_folder = Path.cwd() / folder_name
+    Path(save_folder).mkdir(parents=True, exist_ok=True)
+    return save_folder / book_name
+
+
+def check_for_redirect(response):
+    """Функция проверки редиректа."""
+
+    if not response.history:
+        return
+    else:
+        raise requests.HTTPError
+
+
+def check_url(url: str):
+    """Проверка урла, что сайт верный."""
+
+    if url_serializing(url)['site_name'] == url_serializing(TULULU_URl)['site_name']:
+        return
+    raise requests.HTTPError
 
 
 if __name__ == '__main__':
-    url_file = 'http://tululu.org/txt.php?id=1'
-    # url_file = f'{TULULU_URl}/b1'
-    # main(url_file)
+    url = 'http://tululu.org/txt.php?id=1'
+    # url_file = 'http://tululu.org/b1'
 
-    filepath = download_txt(url_file, 'Алиби')
-    print('filepath', filepath)
+    filepath = download_txt(url, 'Алиби')
+    print(filepath)  # Выведется books/Алиби.txt
+
+    filepath = download_txt(url, 'Али/би', folder='books/')
+    print(filepath)  # Выведется books/Алиби.txt
+
+    filepath = download_txt(url, 'Али\\би', folder='txt/')
+    print(filepath)  # Выведется txt/Алиби.txt
