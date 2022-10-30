@@ -20,7 +20,7 @@ def url_serializing(url: str) -> dict:
     return serialised_data
 
 
-def get_books_file(book_id: int):
+def get_books_file(book_id: int) -> bytes:
     """Функция делает запрос."""
 
     url = f'{TULULU_URl}/txt.php'
@@ -34,42 +34,47 @@ def get_books_file(book_id: int):
         print(f'Book {book_id} is not found')
 
 
-def fetch_book_data(book_id: int):
-    """Функция получения данных о книге (название, автор)"""
+def fetch_book_data(book_id: int) -> list:
+    """Функция получения данных о книге.
+
+    Args:
+        book_id (int): Идентификационный номер книги.
+
+    Returns:
+        list: [Название книги, автор книги].
+    """
 
     url = f'{TULULU_URl}/b{book_id}'
     response = requests.get(url)
     response.raise_for_status()
     soup = BeautifulSoup(response.text, 'lxml')
     title_tag = soup.find('h1')
-    serialized_book = [elem.strip() for elem in title_tag.text.split(' :: ')]
-    header, author = serialized_book
-    return header, author
+    serialized_book = [elem.strip().replace(' ', '_').replace(':', '') for elem in title_tag.text.split(' :: ')]
+    return serialized_book
 
 
-def download_txt(url: str, filename: str, folder: str = 'books/') -> str:
+def download_txt(url: str, folder: str = 'books/') -> str:
     """Функция для скачивания текстовых файлов.
 
     Args:
         url (str): Cсылка на текст, который хочется скачать.
-        filename (str): Имя файла, с которым сохранять.
         folder (str): Папка, куда сохранять.
 
     Returns:
         str: Путь до файла, куда сохранён текст.
     """
 
-    check_url(url)
-    book_name = sanitize_filename(filename)
-    folder = sanitize_filename(folder)
-    book_path = f'{create_path(book_name, folder)}.txt'
     book_id = url_serializing(url).get('id')
     book = get_books_file(book_id)
-    save_book(book, book_path)
-    return book_path
+    folder = sanitize_filename(folder)
+    if book:
+        book_name = fetch_book_data(book_id)[0]
+        book_path = f'{create_path(book_name, folder)}.txt'
+        save_book(book, book_path)
+        return book_path
 
 
-def save_book(text: bytes, filename: str):
+def save_book(text: bytes, filename: str) -> None:
     """Функция сохранения книг."""
 
     with open(filename, 'wb') as file:
@@ -84,7 +89,7 @@ def create_path(book_name: str, folder_name: str, ) -> Path:
     return save_folder / book_name
 
 
-def check_for_redirect(response):
+def check_for_redirect(response) -> None:
     """Функция проверки редиректа."""
 
     if not response.history:
@@ -102,14 +107,9 @@ def check_url(url: str):
 
 
 if __name__ == '__main__':
-    url = 'http://tululu.org/txt.php?id=1'
-    # url_file = 'http://tululu.org/b1'
+    books_urls = [f'http://tululu .org/txt.php?id={number}' for number in range(1, 11)]
 
-    filepath = download_txt(url, 'Алиби')
-    print(filepath)  # Выведется books/Алиби.txt
-
-    filepath = download_txt(url, 'Али/би', folder='books/')
-    print(filepath)  # Выведется books/Алиби.txt
-
-    filepath = download_txt(url, 'Али\\би', folder='txt/')
-    print(filepath)  # Выведется txt/Алиби.txt
+    check_url(books_urls[0])
+    for book_id, url in enumerate(books_urls, 1):
+        filepath = download_txt(url)
+    # download_txt('http://tululu.org/txt.php?id=7')
