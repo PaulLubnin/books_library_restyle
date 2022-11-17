@@ -34,7 +34,7 @@ def get_books_file(book_id: int) -> bytes:
         print(f'Book {book_id} is not found')
 
 
-def fetch_book_data(book_id: int) -> list:
+def fetch_book_name(book_id: int) -> str:
     """Функция получения данных о книге.
 
     Args:
@@ -50,7 +50,7 @@ def fetch_book_data(book_id: int) -> list:
     soup = BeautifulSoup(response.text, 'lxml')
     title_tag = soup.find('h1')
     serialized_book = [elem.strip().replace(' ', '_').replace(':', '') for elem in title_tag.text.split(' :: ')]
-    return serialized_book
+    return f'{book_id}. {serialized_book[0]}'
 
 
 def download_txt(url: str, folder: str = 'books/') -> str:
@@ -68,7 +68,7 @@ def download_txt(url: str, folder: str = 'books/') -> str:
     book = get_books_file(book_id)
     folder = sanitize_filename(folder)
     if book:
-        book_name = fetch_book_data(book_id)[0]
+        book_name = fetch_book_name(book_id)
         book_path = f'{create_path(book_name, folder)}.txt'
         save_book(book, book_path)
         return book_path
@@ -107,7 +107,7 @@ def check_url(url: str):
 
 
 if __name__ == '__main__':
-    books_urls = [f'http://tululu .org/txt.php?id={number}' for number in range(1, 11)]
+    books_urls = [f'http://tululu.org/txt.php?id={number}' for number in range(1, 11)]
 
     check_url(books_urls[0])
     for book_id, url in enumerate(books_urls, 1):
