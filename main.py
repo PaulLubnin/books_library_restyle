@@ -1,5 +1,6 @@
 from pathlib import Path
 from urllib.parse import unquote, urlsplit
+from urllib.parse import urljoin
 
 import requests
 from bs4 import BeautifulSoup
@@ -34,14 +35,14 @@ def get_books_file(book_id: int) -> bytes:
         print(f'Book {book_id} is not found')
 
 
-def fetch_book_name(book_id: int) -> str:
+def fetch_book_data(book_id: int) -> str:
     """Функция получения данных о книге.
 
     Args:
         book_id (int): Идентификационный номер книги.
 
     Returns:
-        list: [Название книги, автор книги].
+        str: Название книги, автор книги.
     """
 
     url = f'{TULULU_URl}/b{book_id}'
@@ -49,6 +50,9 @@ def fetch_book_name(book_id: int) -> str:
     response.raise_for_status()
     soup = BeautifulSoup(response.text, 'lxml')
     title_tag = soup.find('h1')
+    book_image = soup.find('div', class_='bookimage').find('img')['src']
+    book_url = urljoin(TULULU_URl, book_image)
+    print(book_url)
     serialized_book = [elem.strip().replace(' ', '_').replace(':', '') for elem in title_tag.text.split(' :: ')]
     return f'{book_id}. {serialized_book[0]}'
 
@@ -68,7 +72,7 @@ def download_txt(url: str, folder: str = 'books/') -> str:
     book = get_books_file(book_id)
     folder = sanitize_filename(folder)
     if book:
-        book_name = fetch_book_name(book_id)
+        book_name = fetch_book_data(book_id)
         book_path = f'{create_path(book_name, folder)}.txt'
         save_book(book, book_path)
         return book_path
