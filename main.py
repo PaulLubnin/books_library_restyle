@@ -35,7 +35,24 @@ def get_books_file(book_id: int) -> bytes:
         print(f'Book {book_id} is not found')
 
 
-def fetch_book_data(book_id: int) -> str:
+def fetch_cover_url(book_id: int) -> str:
+    """Функция получения ссылки на обложку книги."""
+
+    url = f'{TULULU_URl}/b{book_id}'
+    response = requests.get(url)
+    response.raise_for_status()
+    try:
+        check_for_302_redirect(response)
+        soup = BeautifulSoup(response.text, 'lxml')
+        book_image = soup.find('div', class_='bookimage')
+        cover_url = book_image.find('img')['src']
+        cover_url = urljoin(TULULU_URl, cover_url)
+        return cover_url
+    except requests.HTTPError:
+        print(f'Cover for book {book_id} is not found')
+
+
+def fetch_book_name(book_id: int) -> str:
     """Функция получения данных о книге.
 
     Args:
@@ -50,9 +67,6 @@ def fetch_book_data(book_id: int) -> str:
     response.raise_for_status()
     soup = BeautifulSoup(response.text, 'lxml')
     title_tag = soup.find('h1')
-    book_image = soup.find('div', class_='bookimage').find('img')['src']
-    book_url = urljoin(TULULU_URl, book_image)
-    print(book_url)
     serialized_book = [elem.strip().replace(' ', '_').replace(':', '') for elem in title_tag.text.split(' :: ')]
     return f'{book_id}. {serialized_book[0]}'
 
@@ -72,7 +86,7 @@ def download_txt(url: str, folder: str = 'books/') -> str:
     book = get_books_file(book_id)
     folder = sanitize_filename(folder)
     if book:
-        book_name = fetch_book_data(book_id)
+        book_name = fetch_book_name(book_id)
         book_path = f'{create_path(book_name, folder)}.txt'
         save_book(book, book_path)
         return book_path
@@ -102,6 +116,15 @@ def check_for_redirect(response) -> None:
         raise requests.HTTPError
 
 
+def check_for_302_redirect(response) -> None:
+    """Функция проверки 302 редиректа."""
+
+    if len(response.history) == 2 and response.history[1].status_code == 302:
+        raise requests.HTTPError
+    else:
+        return
+
+
 def check_url(url: str):
     """Проверка урла, что сайт верный."""
 
@@ -112,8 +135,12 @@ def check_url(url: str):
 
 if __name__ == '__main__':
     books_urls = [f'http://tululu.org/txt.php?id={number}' for number in range(1, 11)]
+    books_ids = range(1, 11)
 
     check_url(books_urls[0])
-    for book_id, url in enumerate(books_urls, 1):
-        filepath = download_txt(url)
+    # for book_id, url in enumerate(books_urls, 1):
+    #     filepath = download_txt(url)
     # download_txt('http://tululu.org/txt.php?id=7')
+
+    for book_id in books_ids:
+        fetch_cover_url(book_id)
