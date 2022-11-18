@@ -25,7 +25,7 @@ def url_serializing(url: str) -> dict:
 
 
 def get_books_file(book_id: int) -> bytes:
-    """Функция делает запрос."""
+    """Функция для получения файла книги."""
 
     url = f'{TULULU_URl}/txt.php'
     payload = {'id': book_id}
@@ -39,6 +39,8 @@ def get_books_file(book_id: int) -> bytes:
 
 
 def get_cover_file(url: str) -> bytes:
+    """Функция для получения файла обложки"""
+
     response = requests.get(url)
     response.raise_for_status()
     return response.content
@@ -62,13 +64,13 @@ def fetch_cover_url(book_id: int) -> str:
 
 
 def fetch_book_name(book_id: int) -> str:
-    """Функция получения данных о книге.
+    """Функция получения названия книги.
 
     Args:
         book_id (int): Идентификационный номер книги.
 
     Returns:
-        str: Название книги, автор книги.
+        str: Название книги.
     """
 
     url = f'{TULULU_URl}/b{book_id}'
@@ -81,8 +83,12 @@ def fetch_book_name(book_id: int) -> str:
 
 
 def download_image(url: str, folder: str = 'covers/'):
-    """Функция для скачивания обложки книги"""
+    """Функция для скачивания обложки книги
 
+    Args:
+        url (str): Cсылка на книгу, обложку которой необходимо скачать.
+        folder (str): Папка, куда сохранять.
+    """
     book_id = url_serializing(url).get('id')
     cover_url = fetch_cover_url(book_id)
     folder = sanitize_filename(folder)
@@ -91,7 +97,7 @@ def download_image(url: str, folder: str = 'covers/'):
         image_name = url_serializing(cover_url).get('image_name')
         file_extension = url_serializing(cover_url).get('extension')
         cover_path = f'{create_path(image_name, folder)}.{file_extension}'
-        save_book(cover, cover_path)
+        save_data(cover, cover_path)
 
 
 def download_txt(url: str, folder: str = 'books/') -> str:
@@ -111,15 +117,15 @@ def download_txt(url: str, folder: str = 'books/') -> str:
     if book:
         book_name = fetch_book_name(book_id)
         book_path = f'{create_path(book_name, folder)}.txt'
-        save_book(book, book_path)
+        save_data(book, book_path)
         return book_path
 
 
-def save_book(text: bytes, filename: str) -> None:
-    """Функция сохранения книг."""
+def save_data(saved_file: bytes, filename: str) -> None:
+    """Функция для сохранения книг, обложек книг."""
 
     with open(filename, 'wb') as file:
-        file.write(text)
+        file.write(saved_file)
 
 
 def create_path(book_name: str, folder_name: str, ) -> Path:
