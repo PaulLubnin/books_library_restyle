@@ -18,6 +18,9 @@ def url_serializing(url: str) -> dict:
     if split_url.query:
         query_key, book_id = split_url.query.split('=')
         serialised_data[query_key] = book_id
+    if split_url.path:
+        serialised_data['extension'] = split_url.path.split('.')[-1]
+        serialised_data['image_name'] = split_url.path.split('.')[0].split('/')[-1]
     return serialised_data
 
 
@@ -33,6 +36,12 @@ def get_books_file(book_id: int) -> bytes:
         return response.content
     except requests.HTTPError:
         print(f'Book {book_id} is not found')
+
+
+def get_cover_file(url: str) -> bytes:
+    response = requests.get(url)
+    response.raise_for_status()
+    return response.content
 
 
 def fetch_cover_url(book_id: int) -> str:
@@ -69,6 +78,20 @@ def fetch_book_name(book_id: int) -> str:
     title_tag = soup.find('h1')
     serialized_book = [elem.strip().replace(' ', '_').replace(':', '') for elem in title_tag.text.split(' :: ')]
     return f'{book_id}. {serialized_book[0]}'
+
+
+def download_image(url: str, folder: str = 'covers/'):
+    """Функция для скачивания обложки книги"""
+
+    book_id = url_serializing(url).get('id')
+    cover_url = fetch_cover_url(book_id)
+    folder = sanitize_filename(folder)
+    if cover_url:
+        cover = get_cover_file(cover_url)
+        image_name = url_serializing(cover_url).get('image_name')
+        file_extension = url_serializing(cover_url).get('extension')
+        cover_path = f'{create_path(image_name, folder)}.{file_extension}'
+        save_book(cover, cover_path)
 
 
 def download_txt(url: str, folder: str = 'books/') -> str:
@@ -138,9 +161,10 @@ if __name__ == '__main__':
     books_ids = range(1, 11)
 
     check_url(books_urls[0])
-    # for book_id, url in enumerate(books_urls, 1):
-    #     filepath = download_txt(url)
+    for book_id, url in enumerate(books_urls, 1):
+        filepath = download_txt(url)
+        download_image(url)
     # download_txt('http://tululu.org/txt.php?id=7')
 
-    for book_id in books_ids:
-        fetch_cover_url(book_id)
+    # for book_id in books_ids:
+    #     print(fetch_cover_url(book_id))
