@@ -38,14 +38,6 @@ def get_books_file(book_id: int) -> bytes:
         print(f'Book {book_id} is not found')
 
 
-def get_cover_file(url: str) -> bytes:
-    """Функция для получения файла обложки"""
-
-    response = requests.get(url)
-    response.raise_for_status()
-    return response.content
-
-
 def fetch_cover_url(book_id: int) -> str:
     """Функция получения ссылки на обложку книги."""
 
@@ -127,7 +119,9 @@ def download_image(url: str, folder: str = 'covers/'):
     cover_url = fetch_cover_url(book_id)
     folder = sanitize_filename(folder)
     if cover_url:
-        cover = get_cover_file(cover_url)
+        response = requests.get(cover_url)
+        response.raise_for_status()
+        cover = response.content
         image_name = url_serializing(cover_url).get('image_name')
         file_extension = url_serializing(cover_url).get('extension')
         cover_path = f'{create_path(image_name, folder)}.{file_extension}'
