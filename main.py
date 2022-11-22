@@ -55,23 +55,29 @@ def fetch_cover_url(book_id: int) -> str:
         print(f'Cover for book {book_id} is not found')
 
 
-def fetch_book_name(book_id: int) -> str:
-    """Функция получения названия книги.
+def fetch_book_name(book_id: int) -> dict:
+    """Функция получения названия и автора книги.
 
     Args:
         book_id (int): Идентификационный номер книги.
 
     Returns:
-        str: Название книги.
+        book_data (dict): {'book_title': title, 'book_author': book_author}
     """
 
     url = f'{TULULU_URl}/b{book_id}'
     response = requests.get(url)
     response.raise_for_status()
-    soup = BeautifulSoup(response.text, 'lxml')
-    title_tag = soup.find('h1')
-    serialized_book = [elem.strip().replace(' ', '_').replace(':', '') for elem in title_tag.text.split(' :: ')]
-    return f'{book_id}. {serialized_book[0]}'
+    try:
+        check_for_302_redirect(response)
+        soup = BeautifulSoup(response.text, 'lxml')
+        title_tag = soup.find('h1')
+        book_title, book_author = [elem.strip() for elem in title_tag.text.split(' :: ')]
+        book_data = {'book_title': f'{book_id}. {book_title}',
+                     'book_author': book_author}
+        return book_data
+    except requests.HTTPError:
+        print(f'Book {book_id} is not found. Author and book title not received.')
 
 
 def fetch_book_comments(book_id: int) -> None:
@@ -87,7 +93,7 @@ def fetch_book_comments(book_id: int) -> None:
         for elem in book_comments:
             print(elem.find('span').text, '\n')
     except requests.HTTPError:
-        print(f'Book {book_id} is not found')
+        print(f'Book {book_id} is not found. Comments not received.')
 
 
 def fetch_book_genre(book_id: int) -> None:
@@ -104,7 +110,7 @@ def fetch_book_genre(book_id: int) -> None:
             title, genre = elem.text.split(':')
             print([elem.strip() for elem in genre.split(',')])
     except requests.HTTPError:
-        print(f'Book {book_id} is not found')
+        print(f'Book {book_id} is not found. Genre not received.')
 
 
 def download_image(url: str, folder: str = 'covers/'):
@@ -143,10 +149,17 @@ def download_txt(url: str, folder: str = 'books/') -> str:
     book = get_books_file(book_id)
     folder = sanitize_filename(folder)
     if book:
-        book_name = fetch_book_name(book_id)
+        # TODO необходимо сделать проверку book_name на None
+        book_name = fetch_book_name(book_id).get('book_title')
         book_path = f'{create_path(book_name, folder)}.txt'
         save_data(book, book_path)
         return book_path
+
+
+def parse_book_page(bs4_soup: BeautifulSoup) -> dict:
+    """Функция парсит страницу книги."""
+
+    return
 
 
 def save_data(saved_file: bytes, filename: str) -> None:
@@ -196,9 +209,10 @@ if __name__ == '__main__':
 
     check_url(books_urls[0])
     for book_id, url in enumerate(books_urls, 1):
-        filepath = download_txt(url)
+        # filepath = download_txt(url)
         # download_image(url)
         # fetch_cover_url(book_id)
         # fetch_book_comments(book_id)
-        fetch_book_genre(book_id)
+        print(fetch_book_name(book_id))
+        # fetch_book_genre(book_id)
     # download_txt('http://tululu.org/txt.php?id=7')
