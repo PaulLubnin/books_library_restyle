@@ -25,7 +25,7 @@ def url_serializing(url: str) -> dict:
 
 
 def get_books_file(book_id: int) -> bytes:
-    """Функция для получения файла книги."""
+    """Функция для получения книги."""
 
     url = f'{TULULU_URl}/txt.php'
     payload = {'id': book_id}
@@ -82,6 +82,27 @@ def fetch_book_name(book_id: int) -> str:
     return f'{book_id}. {serialized_book[0]}'
 
 
+def fetch_book_comments(book_id: int) -> None:
+    """Функция для получения комментариев к книге"""
+
+    url = f'{TULULU_URl}/b{book_id}'
+    response = requests.get(url)
+    response.raise_for_status()
+    try:
+        check_for_302_redirect(response)
+        soup = BeautifulSoup(response.text, 'lxml')
+        book_comments = soup.find_all('div', class_='texts')
+        for elem in book_comments:
+            print(elem.find('span').text, '\n')
+    except requests.HTTPError:
+        print(f'Book {book_id} is not found')
+
+
+def fetch_book_genre():
+    """Функция для получения жанра книги"""
+    return
+
+
 def download_image(url: str, folder: str = 'covers/'):
     """Функция для скачивания обложки книги
 
@@ -89,6 +110,7 @@ def download_image(url: str, folder: str = 'covers/'):
         url (str): Cсылка на книгу, обложку которой необходимо скачать.
         folder (str): Папка, куда сохранять.
     """
+    
     book_id = url_serializing(url).get('id')
     cover_url = fetch_cover_url(book_id)
     folder = sanitize_filename(folder)
@@ -168,9 +190,8 @@ if __name__ == '__main__':
 
     check_url(books_urls[0])
     for book_id, url in enumerate(books_urls, 1):
-        filepath = download_txt(url)
-        download_image(url)
+        # filepath = download_txt(url)
+        # download_image(url)
+        # fetch_cover_url(book_id)
+        fetch_book_comments(book_id)
     # download_txt('http://tululu.org/txt.php?id=7')
-
-    # for book_id in books_ids:
-    #     print(fetch_cover_url(book_id))
