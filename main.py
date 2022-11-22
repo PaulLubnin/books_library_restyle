@@ -98,9 +98,21 @@ def fetch_book_comments(book_id: int) -> None:
         print(f'Book {book_id} is not found')
 
 
-def fetch_book_genre():
+def fetch_book_genre(book_id: int) -> None:
     """Функция для получения жанра книги"""
-    return
+
+    url = f'{TULULU_URl}/b{book_id}'
+    response = requests.get(url)
+    response.raise_for_status()
+    try:
+        check_for_302_redirect(response)
+        soup = BeautifulSoup(response.text, 'lxml')
+        book_genre = soup.find_all('span', class_='d_book')
+        for elem in book_genre:
+            title, genre = elem.text.split(':')
+            print([elem.strip() for elem in genre.split(',')])
+    except requests.HTTPError:
+        print(f'Book {book_id} is not found')
 
 
 def download_image(url: str, folder: str = 'covers/'):
@@ -110,7 +122,7 @@ def download_image(url: str, folder: str = 'covers/'):
         url (str): Cсылка на книгу, обложку которой необходимо скачать.
         folder (str): Папка, куда сохранять.
     """
-    
+
     book_id = url_serializing(url).get('id')
     cover_url = fetch_cover_url(book_id)
     folder = sanitize_filename(folder)
@@ -190,8 +202,9 @@ if __name__ == '__main__':
 
     check_url(books_urls[0])
     for book_id, url in enumerate(books_urls, 1):
-        # filepath = download_txt(url)
+        filepath = download_txt(url)
         # download_image(url)
         # fetch_cover_url(book_id)
-        fetch_book_comments(book_id)
+        # fetch_book_comments(book_id)
+        fetch_book_genre(book_id)
     # download_txt('http://tululu.org/txt.php?id=7')
