@@ -10,7 +10,14 @@ TULULU_URl = 'https://tululu.org'
 
 
 def url_serializing(url: str) -> dict:
-    """Функция парсит урл."""
+    """Функция парсит урл.
+
+    Args:
+        url (str): Ссылка на книгу.
+
+    Returns:
+        dict: Словарь с ключами: site_name, extension, image_name, [query_key].
+    """
 
     unq_url = unquote(url)
     split_url = urlsplit(unq_url)
@@ -25,7 +32,14 @@ def url_serializing(url: str) -> dict:
 
 
 def get_books_file(book_id: int) -> bytes:
-    """Функция для получения книги."""
+    """Функция для получения книги.
+
+    Args:
+        book_id (int): Идентификационный номер книги.
+
+    Returns:
+        bytes: Книга в байтах.
+    """
 
     url = f'{TULULU_URl}/txt.php'
     payload = {'id': book_id}
@@ -38,82 +52,70 @@ def get_books_file(book_id: int) -> bytes:
         print(f'Book {book_id} is not found')
 
 
-def fetch_cover_url(book_id: int) -> str:
-    """Функция получения ссылки на обложку книги."""
+def parse_cover_url(bs4_soup: BeautifulSoup) -> str:
+    """Функция получения ссылки на обложку книги.
 
-    url = f'{TULULU_URl}/b{book_id}'
-    response = requests.get(url)
-    response.raise_for_status()
-    try:
-        check_for_302_redirect(response)
-        soup = BeautifulSoup(response.text, 'lxml')
-        book_image = soup.find('div', class_='bookimage')
-        cover_url = book_image.find('img')['src']
-        cover_url = urljoin(TULULU_URl, cover_url)
-        return cover_url
-    except requests.HTTPError:
-        print(f'Cover for book {book_id} is not found')
+    Args:
+        bs4_soup (int): HTML контент.
+
+    Returns:
+        str: Ссылка на обложку книги.
+    """
+
+    book_image = bs4_soup.find('div', class_='bookimage')
+    cover_url = book_image.find('img')['src']
+    cover_url = urljoin(TULULU_URl, cover_url)
+    return cover_url
 
 
-def fetch_book_name(book_id: int) -> dict:
+def parse_book_title(bs4_soup: BeautifulSoup) -> dict:
     """Функция получения названия и автора книги.
 
     Args:
-        book_id (int): Идентификационный номер книги.
+        bs4_soup (int): HTML контент.
 
     Returns:
-        book_data (dict): {'book_title': title, 'book_author': book_author}
+        dict: Словарь с ключами: book_title, book_author.
     """
 
-    url = f'{TULULU_URl}/b{book_id}'
-    response = requests.get(url)
-    response.raise_for_status()
-    try:
-        check_for_302_redirect(response)
-        soup = BeautifulSoup(response.text, 'lxml')
-        title_tag = soup.find('h1')
-        book_title, book_author = [elem.strip() for elem in title_tag.text.split(' :: ')]
-        book_data = {'book_title': f'{book_id}. {book_title}',
-                     'book_author': book_author}
-        return book_data
-    except requests.HTTPError:
-        print(f'Book {book_id} is not found. Author and book title not received.')
+    title_tag = bs4_soup.find('h1')
+    book_title, book_author = [elem.strip() for elem in title_tag.text.split(' :: ')]
+    book_data = {'book_title': f'{book_id}. {book_title}',
+                 'book_author': book_author}
+    return book_data
 
 
-def fetch_book_comments(book_id: int) -> None:
-    """Функция для получения комментариев к книге"""
+def parse_book_comments(bs4_soup: BeautifulSoup) -> list:
+    """Функция для получения комментариев к книге.
 
-    url = f'{TULULU_URl}/b{book_id}'
-    response = requests.get(url)
-    response.raise_for_status()
-    try:
-        check_for_302_redirect(response)
-        soup = BeautifulSoup(response.text, 'lxml')
-        book_comments = soup.find_all('div', class_='texts')
-        for elem in book_comments:
-            print(elem.find('span').text, '\n')
-    except requests.HTTPError:
-        print(f'Book {book_id} is not found. Comments not received.')
+    Args:
+        bs4_soup (int): HTML контент.
+
+    Returns:
+        list: Список с комментариями.
+    """
+
+    book_comments = bs4_soup.find_all('div', class_='texts')
+    return [elem.find('span').text for elem in book_comments]
 
 
-def fetch_book_genre(book_id: int) -> None:
-    """Функция для получения жанра книги"""
+def parse_book_genre(bs4_soup: BeautifulSoup) -> list:
+    """Функция для получения жанра книги.
 
-    url = f'{TULULU_URl}/b{book_id}'
-    response = requests.get(url)
-    response.raise_for_status()
-    try:
-        check_for_302_redirect(response)
-        soup = BeautifulSoup(response.text, 'lxml')
-        book_genre = soup.find_all('span', class_='d_book')
-        for elem in book_genre:
-            title, genre = elem.text.split(':')
-            print([elem.strip() for elem in genre.split(',')])
-    except requests.HTTPError:
-        print(f'Book {book_id} is not found. Genre not received.')
+    Args:
+        bs4_soup (int): HTML контент.
+
+    Returns:
+        list: Список с жанрами книги.
+    """
+
+    book_genre = bs4_soup.find_all('span', class_='d_book')
+    for elem in book_genre:
+        title, genre = elem.text.split(':')
+        return [elem.strip() for elem in genre.split(',')]
 
 
-def download_image(url: str, folder: str = 'covers/'):
+def download_image(url: str, folder: str = 'covers/') -> None:
     """Функция для скачивания обложки книги
 
     Args:
@@ -122,7 +124,7 @@ def download_image(url: str, folder: str = 'covers/'):
     """
 
     book_id = url_serializing(url).get('id')
-    cover_url = fetch_cover_url(book_id)
+    cover_url = parse_cover_url(book_id)
     folder = sanitize_filename(folder)
     if cover_url:
         response = requests.get(cover_url)
@@ -150,27 +152,59 @@ def download_txt(url: str, folder: str = 'books/') -> str:
     folder = sanitize_filename(folder)
     if book:
         # TODO необходимо сделать проверку book_name на None
-        book_name = fetch_book_name(book_id).get('book_title')
+        book_name = parse_book_title(book_id).get('book_title')
         book_path = f'{create_path(book_name, folder)}.txt'
         save_data(book, book_path)
         return book_path
 
 
-def parse_book_page(bs4_soup: BeautifulSoup) -> dict:
-    """Функция парсит страницу книги."""
+def parse_book_page(book_id: int) -> dict:
+    """Функция парсит страницу книги.
 
-    return
+    Args:
+        book_id (int): Идентификационный номер книги.
+
+    Returns:
+        book_data (dict): Словарь с ключами: title, author, genre, cover_url, comments.
+    """
+
+    url = f'{TULULU_URl}/b{book_id}'
+    response = requests.get(url)
+    response.raise_for_status()
+    try:
+        check_for_302_redirect(response)
+        soup = BeautifulSoup(response.text, 'lxml')
+        book_data = {
+            'title': parse_book_title(soup).get('book_title'),
+            'author': parse_book_title(soup).get('book_author'),
+            'genre': parse_book_genre(soup),
+            'cover_url': parse_cover_url(soup),
+            'comments': parse_book_comments(soup),
+        }
+        return book_data
+    except requests.HTTPError:
+        print(f'Book {book_id} parsing failed')
 
 
 def save_data(saved_file: bytes, filename: str) -> None:
-    """Функция для сохранения книг, обложек книг."""
+    """Функция для сохранения книг, обложек книг.
+
+    Args:
+        saved_file (bytes): Файл в байтах.
+        filename (str): Название файла.
+    """
 
     with open(filename, 'wb') as file:
         file.write(saved_file)
 
 
 def create_path(book_name: str, folder_name: str, ) -> Path:
-    """Функция создает папку и возвращает её путь."""
+    """Функция создает папку и возвращает её путь.
+
+    Args:
+        book_name (str): Название книги.
+        folder_name (str): Название папки, куда нужно будет сложить файлы.
+    """
 
     save_folder = Path.cwd() / folder_name
     Path(save_folder).mkdir(parents=True, exist_ok=True)
@@ -211,8 +245,8 @@ if __name__ == '__main__':
     for book_id, url in enumerate(books_urls, 1):
         # filepath = download_txt(url)
         # download_image(url)
-        # fetch_cover_url(book_id)
-        # fetch_book_comments(book_id)
-        print(fetch_book_name(book_id))
-        # fetch_book_genre(book_id)
-    # download_txt('http://tululu.org/txt.php?id=7')
+        # parse_cover_url(book_id)
+        # parse_book_comments(book_id)
+        # parse_book_name(book_id)
+        # parse_book_genre(book_id)
+        print(parse_book_page(book_id))
