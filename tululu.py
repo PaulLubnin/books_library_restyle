@@ -68,12 +68,12 @@ def parse_cover_url(bs4_soup: BeautifulSoup) -> str:
     return cover_url
 
 
-def parse_book_title(bs4_soup: BeautifulSoup) -> dict:
+def parse_book_title(bs4_soup: BeautifulSoup, book_id) -> dict:
     """Функция получения названия и автора книги.
 
     Args:
         bs4_soup (int): HTML контент.
-
+        book_id (int): Идентификационный номер книги.
     Returns:
         dict: Словарь с ключами: book_title, book_author.
     """
@@ -124,9 +124,9 @@ def download_image(url: str, folder: str = 'covers/') -> None:
     """
 
     book_id = url_serializing(url).get('id')
-    cover_url = parse_cover_url(book_id)
-    folder = sanitize_filename(folder)
-    if cover_url:
+    if parse_book_page(book_id):
+        cover_url = parse_book_page(book_id).get('cover_url')
+        folder = sanitize_filename(folder)
         response = requests.get(cover_url)
         response.raise_for_status()
         cover = response.content
@@ -151,8 +151,7 @@ def download_txt(url: str, folder: str = 'books/') -> str:
     book = get_books_file(book_id)
     folder = sanitize_filename(folder)
     if book:
-        # TODO необходимо сделать проверку book_name на None
-        book_name = parse_book_title(book_id).get('book_title')
+        book_name = parse_book_page(book_id).get('title')
         book_path = f'{create_path(book_name, folder)}.txt'
         save_data(book, book_path)
         return book_path
@@ -175,8 +174,8 @@ def parse_book_page(book_id: int) -> dict:
         check_for_302_redirect(response)
         soup = BeautifulSoup(response.text, 'lxml')
         book_data = {
-            'title': parse_book_title(soup).get('book_title'),
-            'author': parse_book_title(soup).get('book_author'),
+            'title': parse_book_title(soup, book_id).get('book_title'),
+            'author': parse_book_title(soup, book_id).get('book_author'),
             'genre': parse_book_genre(soup),
             'cover_url': parse_cover_url(soup),
             'comments': parse_book_comments(soup),
@@ -242,11 +241,7 @@ if __name__ == '__main__':
     books_ids = range(1, 11)
 
     check_url(books_urls[0])
-    for book_id, url in enumerate(books_urls, 1):
-        # filepath = download_txt(url)
-        # download_image(url)
-        # parse_cover_url(book_id)
-        # parse_book_comments(book_id)
-        # parse_book_name(book_id)
-        # parse_book_genre(book_id)
-        print(parse_book_page(book_id))
+    for book_number, url in enumerate(books_urls, 1):
+        filepath = download_txt(url)
+        download_image(url)
+    # print(parse_book_page(8))
