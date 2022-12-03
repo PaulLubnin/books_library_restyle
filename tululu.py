@@ -1,3 +1,4 @@
+import argparse
 from pathlib import Path
 from urllib.parse import unquote, urlsplit
 from urllib.parse import urljoin
@@ -228,23 +229,31 @@ def check_for_302_redirect(response) -> None:
         return
 
 
-def check_url(url: str):
-    """Проверка урла, что сайт верный."""
-
-    if url_serializing(url)['site_name'] == url_serializing(TULULU_URl)['site_name']:
-        return
-    raise requests.HTTPError
-
-
 def main():
-    books_urls = [f'http://tululu.org/txt.php?id={number}' for number in range(1, 11)]
-    books_ids = range(1, 11)
+    """Функция запуска скрипта из командной строки."""
 
-    check_url(books_urls[0])
-    for book_number, url in enumerate(books_urls, 1):
-        filepath = download_txt(url)
-        download_image(url)
-    # print(parse_book_page(8))
+    parser = argparse.ArgumentParser(
+        prog='tululu.py',
+        description='Downloading books.'
+    )
+    parser.add_argument(
+        'start_id', default=1, type=int,
+        help='Which book to start downloading.')
+    parser.add_argument(
+        'end_id', default=10, type=int,
+        help='Which book to download.')
+    args = parser.parse_args()
+
+    if not args.start_id > args.end_id:
+        books_urls = [f'http://tululu.org/txt.php?id={number}' for number in range(args.start_id, args.end_id)]
+
+        for iteration_number, url in enumerate(books_urls, 1):
+            filepath = download_txt(url)
+            if filepath:
+                print(f'{iteration_number}. {filepath}')
+                download_image(url)
+    else:
+        print('Не правильные ID.')
 
 
 if __name__ == '__main__':
