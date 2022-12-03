@@ -236,7 +236,7 @@ def check_url(url: str):
     raise requests.HTTPError
 
 
-if __name__ == '__main__':
+def main():
     books_urls = [f'http://tululu.org/txt.php?id={number}' for number in range(1, 11)]
     books_ids = range(1, 11)
 
@@ -245,3 +245,7 @@ if __name__ == '__main__':
         filepath = download_txt(url)
         download_image(url)
     # print(parse_book_page(8))
+
+
+if __name__ == '__main__':
+    main()
