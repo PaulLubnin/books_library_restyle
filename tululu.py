@@ -1,4 +1,5 @@
 import argparse
+import sys
 from pathlib import Path
 from urllib.parse import unquote, urlsplit
 from urllib.parse import urljoin
@@ -80,7 +81,7 @@ def parse_book_title(bs4_soup: BeautifulSoup, book_id) -> dict:
     """
 
     title_tag = bs4_soup.find('h1')
-    book_title, book_author = [elem.strip() for elem in title_tag.text.split(' :: ')]
+    book_title, book_author = [elem.strip().replace(': ', '. ') for elem in title_tag.text.split(' :: ')]
     book_data = {'book_title': f'{book_id}. {book_title}',
                  'book_author': book_author}
     return book_data
@@ -244,16 +245,18 @@ def main():
         help='Which book to download.')
     args = parser.parse_args()
 
-    if not args.start_id > args.end_id:
-        books_urls = [f'http://tululu.org/txt.php?id={number}' for number in range(args.start_id, args.end_id)]
+    if args.start_id > args.end_id:
+        print(f'Первый аргумент должен быть меньше второго.\npython tululu.py {args.end_id} {args.start_id}')
+        sys.exit()
 
-        for iteration_number, url in enumerate(books_urls, 1):
-            filepath = download_txt(url)
-            if filepath:
-                print(f'{iteration_number}. {filepath}')
-                download_image(url)
-    else:
-        print('Не правильные ID.')
+    books_urls = [f'http://tululu.org/txt.php?id={number}' for number in range(args.start_id, args.end_id)]
+
+    for iteration_number, url in enumerate(books_urls, 1):
+        filepath = download_txt(url)
+        if not filepath:
+            continue
+        print(f'{iteration_number}. {filepath}')
+        download_image(url)
 
 
 if __name__ == '__main__':
