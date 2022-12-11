@@ -117,15 +117,14 @@ def parse_book_genre(bs4_soup: BeautifulSoup) -> list:
         return [elem.strip() for elem in genre.split(',')]
 
 
-def download_image(url: str, folder: str = 'covers/') -> None:
+def download_image(book_id: int, folder: str = 'covers/') -> None:
     """Функция для скачивания обложки книги
 
     Args:
-        url (str): Cсылка на книгу, обложку которой необходимо скачать.
+        book_id (int): Cсылка на книгу, обложку которой необходимо скачать.
         folder (str): Папка, куда сохранять.
     """
 
-    book_id = url_serializing(url).get('id')
     if parse_book_page(book_id):
         cover_url = parse_book_page(book_id).get('cover_url')
         folder = sanitize_filename(folder)
@@ -138,18 +137,17 @@ def download_image(url: str, folder: str = 'covers/') -> None:
         save_data(cover, cover_path)
 
 
-def download_txt(url: str, folder: str = 'books/') -> str:
+def download_txt(book_id: int, folder: str = 'books/') -> str:
     """Функция для скачивания текстовых файлов.
 
     Args:
-        url (str): Cсылка на текст, который хочется скачать.
+        book_id (int): Cсылка на текст, который хочется скачать.
         folder (str): Папка, куда сохранять.
 
     Returns:
         str: Путь до файла, куда сохранён текст.
     """
 
-    book_id = url_serializing(url).get('id')
     book = get_books_file(book_id)
     folder = sanitize_filename(folder)
     if book:
@@ -249,14 +247,12 @@ def main():
         print(f'Первый аргумент должен быть меньше второго.\npython tululu.py {args.end_id} {args.start_id}')
         sys.exit()
 
-    books_urls = [f'http://tululu.org/txt.php?id={number}' for number in range(args.start_id, args.end_id)]
-
-    for iteration_number, url in enumerate(books_urls, 1):
-        filepath = download_txt(url)
+    for book_id in range(args.start_id, args.end_id):
+        filepath = download_txt(book_id)
         if not filepath:
             continue
-        print(f'{iteration_number}. {filepath}')
-        download_image(url)
+        print(f'{book_id}. {filepath}')
+        download_image(book_id)
 
 
 if __name__ == '__main__':
