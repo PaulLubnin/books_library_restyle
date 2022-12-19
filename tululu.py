@@ -1,5 +1,6 @@
 import argparse
 import sys
+import time
 from pathlib import Path
 from urllib.parse import unquote, urlsplit
 from urllib.parse import urljoin
@@ -248,11 +249,17 @@ def main():
         sys.exit()
 
     for book_id in range(args.start_id, args.end_id):
-        filepath = download_txt(book_id)
-        if not filepath:
-            continue
-        print(f'{book_id}. {filepath}')
-        download_image(book_id)
+        try:
+            filepath = download_txt(book_id)
+            if not filepath:
+                continue
+            print(f'{book_id}. {filepath}')
+            download_image(book_id)
+        except requests.HTTPError:
+            print('Ошибка в адресе', file=sys.stderr)
+        except requests.ConnectionError:
+            print('Неполадки с интернетом. Восстановление соединения...', file=sys.stderr)
+            time.sleep(10)
 
 
 if __name__ == '__main__':
