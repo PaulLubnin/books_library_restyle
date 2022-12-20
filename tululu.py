@@ -12,7 +12,7 @@ from pathvalidate import sanitize_filename
 TULULU_URl = 'https://tululu.org'
 
 
-def url_serializing(url: str) -> dict:
+def parsing_url(url: str) -> dict:
     """Функция парсит урл.
 
     Args:
@@ -132,8 +132,8 @@ def download_image(book_id: int, folder: str = 'covers/') -> None:
         response = requests.get(cover_url)
         response.raise_for_status()
         cover = response.content
-        image_name = url_serializing(cover_url).get('image_name')
-        file_extension = url_serializing(cover_url).get('extension')
+        image_name = parsing_url(cover_url).get('image_name')
+        file_extension = parsing_url(cover_url).get('extension')
         cover_path = f'{create_path(image_name, folder)}.{file_extension}'
         save_data(cover, cover_path)
 
