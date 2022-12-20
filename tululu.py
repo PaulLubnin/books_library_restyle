@@ -55,6 +55,26 @@ def get_books_file(book_id: int) -> bytes:
         print(f'Book {book_id} is not found')
 
 
+def get_book_page(book_id: int) -> str:
+    """Функция делает запрос для получения страницы книги
+
+    Args:
+        book_id (int): Идентификационный номер книги.
+
+    Returns:
+
+    """
+
+    url = f'{TULULU_URl}/b{book_id}'
+    response = requests.get(url)
+    response.raise_for_status()
+    try:
+        check_for_302_redirect(response)
+        return response.text
+    except requests.HTTPError:
+        print(f'Book {book_id} parsing failed')
+
+
 def parse_cover_url(bs4_soup: BeautifulSoup) -> str:
     """Функция получения ссылки на обложку книги.
 
@@ -126,8 +146,9 @@ def download_image(book_id: int, folder: str = 'covers/') -> None:
         folder (str): Папка, куда сохранять.
     """
 
-    if parse_book_page(book_id):
-        cover_url = parse_book_page(book_id).get('cover_url')
+    page_book = get_book_page(book_id)
+    if parse_book_page(page_book, book_id):
+        cover_url = parse_book_page(page_book, book_id).get('cover_url')
         folder = sanitize_filename(folder)
         response = requests.get(cover_url)
         response.raise_for_status()
@@ -152,38 +173,33 @@ def download_txt(book_id: int, folder: str = 'books/') -> str:
     book = get_books_file(book_id)
     folder = sanitize_filename(folder)
     if book:
-        book_name = parse_book_page(book_id).get('title')
+        page_book = get_book_page(book_id)
+        book_name = parse_book_page(page_book, book_id).get('title')
         book_path = f'{create_path(book_name, folder)}.txt'
         save_data(book, book_path)
         return book_path
 
 
-def parse_book_page(book_id: int) -> dict:
+def parse_book_page(page: str, book_id: int) -> dict:
     """Функция парсит страницу книги.
 
     Args:
+        page (str): Страница книги в тектовом формате.
         book_id (int): Идентификационный номер книги.
 
     Returns:
         book_data (dict): Словарь с ключами: title, author, genre, cover_url, comments.
     """
 
-    url = f'{TULULU_URl}/b{book_id}'
-    response = requests.get(url)
-    response.raise_for_status()
-    try:
-        check_for_302_redirect(response)
-        soup = BeautifulSoup(response.text, 'lxml')
-        book_data = {
-            'title': parse_book_title(soup, book_id).get('book_title'),
-            'author': parse_book_title(soup, book_id).get('book_author'),
-            'genre': parse_book_genre(soup),
-            'cover_url': parse_cover_url(soup),
-            'comments': parse_book_comments(soup),
-        }
-        return book_data
-    except requests.HTTPError:
-        print(f'Book {book_id} parsing failed')
+    soup = BeautifulSoup(page, 'lxml')
+    book_data = {
+        'title': parse_book_title(soup, book_id).get('book_title'),
+        'author': parse_book_title(soup, book_id).get('book_author'),
+        'genre': parse_book_genre(soup),
+        'cover_url': parse_cover_url(soup),
+        'comments': parse_book_comments(soup),
+    }
+    return book_data
 
 
 def save_data(saved_file: bytes, filename: str) -> None:
