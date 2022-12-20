@@ -50,6 +50,7 @@ def get_books_file(book_id: int) -> bytes:
     response.raise_for_status()
     try:
         check_for_redirect(response)
+        print([elem.status_code == 302 for elem in response.history])
         return response.content
     except requests.HTTPError:
         print(f'Book {book_id} is not found')
@@ -69,7 +70,7 @@ def get_book_page(book_id: int) -> str:
     response = requests.get(url)
     response.raise_for_status()
     try:
-        check_for_302_redirect(response)
+        check_for_redirect(response)
         return response.text
     except requests.HTTPError:
         print(f'Book {book_id} parsing failed')
@@ -172,8 +173,8 @@ def download_txt(book_id: int, folder: str = 'books/') -> str:
 
     book = get_books_file(book_id)
     folder = sanitize_filename(folder)
-    if book:
-        page_book = get_book_page(book_id)
+    page_book = get_book_page(book_id)
+    if book and page_book:
         book_name = parse_book_page(page_book, book_id).get('title')
         book_path = f'{create_path(book_name, folder)}.txt'
         save_data(book, book_path)
@@ -230,19 +231,9 @@ def create_path(book_name: str, folder_name: str, ) -> Path:
 def check_for_redirect(response) -> None:
     """Функция проверки редиректа."""
 
-    if not response.history:
-        return
-    else:
+    print([elem.status_code == 302 for elem in response.history])
+    if (elem.status_code == 302 for elem in response.history):
         raise requests.HTTPError
-
-
-def check_for_302_redirect(response) -> None:
-    """Функция проверки 302 редиректа."""
-
-    if len(response.history) == 2 and response.history[1].status_code == 302:
-        raise requests.HTTPError
-    else:
-        return
 
 
 def main():
@@ -264,16 +255,17 @@ def main():
         print(f'Первый аргумент должен быть меньше второго.\npython tululu.py {args.end_id} {args.start_id}')
         sys.exit()
 
-    for book_id in range(args.start_id, args.end_id):
+    for iteration_number, book_id in enumerate(range(args.start_id, args.end_id + 1), 1):
         try:
             filepath = download_txt(book_id)
             if not filepath:
                 continue
-            print(f'{book_id}. {filepath}')
+            print(f'{iteration_number}. {filepath}')
             download_image(book_id)
         except requests.HTTPError:
             print('Ошибка в адресе', file=sys.stderr)
         except requests.ConnectionError:
+            # todo разобраться с обрывом связи, сейчас просто задержка в 10 секунд на итерации
             print('Неполадки с интернетом. Восстановление соединения...', file=sys.stderr)
             time.sleep(10)
 
