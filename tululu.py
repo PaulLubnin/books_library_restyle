@@ -59,7 +59,7 @@ def get_book_page(book_id: int) -> str:
         book_id (int): Идентификационный номер книги.
 
     Returns:
-
+        str: HTML контент
     """
 
     url = f'{TULULU_URl}/b{book_id}'
@@ -69,10 +69,11 @@ def get_book_page(book_id: int) -> str:
     return response.text
 
 
-def parse_cover_url(bs4_soup: BeautifulSoup) -> str:
+def parse_cover_url(bs4_soup: BeautifulSoup, book_id) -> str:
     """Функция получения ссылки на обложку книги.
 
     Args:
+        book_id: Идентификатор книги.
         bs4_soup (int): HTML контент.
 
     Returns:
@@ -81,7 +82,7 @@ def parse_cover_url(bs4_soup: BeautifulSoup) -> str:
 
     book_image = bs4_soup.find('div', class_='bookimage')
     cover_url = book_image.find('img')['src']
-    cover_url = urljoin(TULULU_URl, cover_url)
+    cover_url = urljoin(f'{TULULU_URl}/b{book_id}/', cover_url)
     return cover_url
 
 
@@ -90,7 +91,7 @@ def parse_book_title(bs4_soup: BeautifulSoup) -> list:
 
     Args:
         bs4_soup (int): HTML контент.
-        book_id (int): Идентификационный номер книги.
+
     Returns:
         list: [book_title, book_author].
     """
@@ -187,7 +188,7 @@ def parse_book_page(page: str, book_id: int) -> dict:
     return {'title': f'{book_id}.{book_title}',
             'author': book_author,
             'genre': parse_book_genre(soup),
-            'cover_url': parse_cover_url(soup),
+            'cover_url': parse_cover_url(soup, book_id),
             'comments': parse_book_comments(soup)}
 
 
