@@ -9,20 +9,20 @@ import requests
 from bs4 import BeautifulSoup
 from pathvalidate import sanitize_filename
 
-TULULU_URl = 'https://tululu.org'
+TULULU_URL = 'https://tululu.org'
 
 
 def get_books_file(book_id: int) -> bytes:
-    """Функция для получения книги.
+    """ Функция для получения книги.
 
     Args:
-        book_id (int): Идентификационный номер книги.
+        book_id: Идентификационный номер книги.
 
     Returns:
         bytes: Книга в байтах.
     """
 
-    url = f'{TULULU_URl}/txt.php'
+    url = f'{TULULU_URL}/txt.php'
     payload = {'id': book_id}
     response = requests.get(url, params=payload)
     response.raise_for_status()
@@ -31,16 +31,16 @@ def get_books_file(book_id: int) -> bytes:
 
 
 def get_book_page(book_id: int) -> str:
-    """Функция делает запрос для получения страницы книги
+    """ Функция делает запрос для получения страницы книги
 
     Args:
-        book_id (int): Идентификационный номер книги.
+        book_id: Идентификационный номер книги.
 
     Returns:
-        str: HTML контент
+        str: HTML контент.
     """
 
-    url = f'{TULULU_URl}/b{book_id}'
+    url = f'{TULULU_URL}/b{book_id}'
     response = requests.get(url)
     response.raise_for_status()
     check_for_redirect(response)
@@ -48,13 +48,13 @@ def get_book_page(book_id: int) -> str:
 
 
 def get_cover_file(cover_url: str) -> bytes:
-    """ Функция делает запрос для получения обложки книги
+    """ Функция делает запрос для получения обложки книги.
 
     Args:
-        cover_url (str): Ссылка на обложку.
+        cover_url: Ссылка на обложку.
 
     Returns:
-        str: HTML контент
+        str: HTML контент.
     """
 
     response = requests.get(cover_url)
@@ -64,10 +64,10 @@ def get_cover_file(cover_url: str) -> bytes:
 
 
 def parsing_url(url: str) -> dict:
-    """Функция парсит урл.
+    """ Функция парсит урл.
 
     Args:
-        url (str): Ссылка на книгу.
+        url: Ссылка на книгу.
 
     Returns:
         dict: Словарь с ключами: site_name, extension, image_name, [query_key].
@@ -86,11 +86,11 @@ def parsing_url(url: str) -> dict:
 
 
 def parse_book_page(page: str, book_id: int) -> dict:
-    """Функция парсит страницу книги.
+    """ Функция парсит страницу книги.
 
     Args:
-        page (str): Страница книги в текстовом формате.
-        book_id (int): Идентификационный номер книги.
+        page: Страница книги в текстовом формате.
+        book_id: Идентификационный номер книги.
 
     Returns:
         Словарь с ключами: title, author, genre, cover_url, comments.
@@ -106,11 +106,11 @@ def parse_book_page(page: str, book_id: int) -> dict:
 
 
 def parse_cover_url(bs4_soup: BeautifulSoup, book_id) -> str:
-    """Функция получения ссылки на обложку книги.
+    """ Функция получения ссылки на обложку книги.
 
     Args:
         book_id: Идентификатор книги.
-        bs4_soup (int): HTML контент.
+        bs4_soup: HTML контент.
 
     Returns:
         str: Ссылка на обложку книги.
@@ -118,12 +118,12 @@ def parse_cover_url(bs4_soup: BeautifulSoup, book_id) -> str:
 
     book_image = bs4_soup.find('div', class_='bookimage')
     cover_url = book_image.find('img')['src']
-    cover_url = urljoin(f'{TULULU_URl}/b{book_id}/', cover_url)
+    cover_url = urljoin(f'{TULULU_URL}/b{book_id}/', cover_url)
     return cover_url
 
 
 def parse_book_title(bs4_soup: BeautifulSoup) -> list:
-    """Функция получения названия и автора книги.
+    """ Функция получения названия и автора книги.
 
     Args:
         bs4_soup (int): HTML контент.
@@ -137,10 +137,10 @@ def parse_book_title(bs4_soup: BeautifulSoup) -> list:
 
 
 def parse_book_comments(bs4_soup: BeautifulSoup) -> list:
-    """Функция для получения комментариев к книге.
+    """ Функция для получения комментариев к книге.
 
     Args:
-        bs4_soup (int): HTML контент.
+        bs4_soup: HTML контент.
 
     Returns:
         list: Список с комментариями.
@@ -151,10 +151,10 @@ def parse_book_comments(bs4_soup: BeautifulSoup) -> list:
 
 
 def parse_book_genre(bs4_soup: BeautifulSoup) -> list:
-    """Функция для получения жанра книги.
+    """ Функция для получения жанра книги.
 
     Args:
-        bs4_soup (int): HTML контент.
+        bs4_soup: HTML контент.
 
     Returns:
         list: Список с жанрами книги.
@@ -167,13 +167,13 @@ def parse_book_genre(bs4_soup: BeautifulSoup) -> list:
 
 
 def download_image(image_name: str, cover_url: str, file_extension: str, folder: str = 'covers/') -> None:
-    """Функция для скачивания обложки книги.
+    """ Функция для скачивания обложки книги.
 
     Args:
-        image_name (str): Название обложки.
-        cover_url (str): Ссылка на обложку.
-        file_extension (str): Расширение файла обложки.
-        folder (str): Папка, куда сохранять.
+        image_name: Название обложки.
+        cover_url: Ссылка на обложку.
+        file_extension: Расширение файла обложки.
+        folder: Папка, куда сохранять.
     """
 
     cover = get_cover_file(cover_url)
@@ -183,12 +183,12 @@ def download_image(image_name: str, cover_url: str, file_extension: str, folder:
 
 
 def download_txt(book_id: int, book_name: str, folder: str = 'books/') -> str:
-    """Функция для скачивания текстовых файлов.
+    """ Функция для скачивания текстовых файлов.
 
     Args:
-        book_id (int): Cсылка на текст, который хочется скачать.
-        book_name (str): Название книги.
-        folder (str): Папка, куда сохранять.
+        book_id: Идентификатор книги.
+        book_name: Название книги.
+        folder: Папка, куда сохранять.
 
     Returns:
         str: Путь до файла, куда сохранён текст.
@@ -203,11 +203,11 @@ def download_txt(book_id: int, book_name: str, folder: str = 'books/') -> str:
 
 
 def save_data(saved_file: bytes, filename: str) -> None:
-    """Функция для сохранения книг, обложек книг.
+    """ Функция для сохранения книг, обложек книг.
 
     Args:
-        saved_file (bytes): Файл в байтах.
-        filename (str): Название файла.
+        saved_file: Файл в байтах.
+        filename: Название файла.
     """
 
     with open(filename, 'wb') as file:
@@ -215,11 +215,11 @@ def save_data(saved_file: bytes, filename: str) -> None:
 
 
 def create_path(book_name: str, folder_name: str, ) -> Path:
-    """Функция создает папку и возвращает её путь.
+    """ Функция создает папку и возвращает её путь.
 
     Args:
-        book_name (str): Название книги.
-        folder_name (str): Название папки, куда нужно будет сложить файлы.
+        book_name: Название книги.
+        folder_name: Название папки, куда нужно будет сложить файлы.
     """
 
     save_folder = Path.cwd() / folder_name
@@ -228,17 +228,26 @@ def create_path(book_name: str, folder_name: str, ) -> Path:
 
 
 def check_for_redirect(response) -> None:
-    """Функция проверки редиректа."""
+    """ Функция проверки редиректа. """
 
     for elem in response.history:
         if elem.status_code == 302:
             raise requests.HTTPError
 
 
-def starting_parser(start_page: int, end_page: int):
-    """ Запуск парсера. """
+def starting_parser(first_id: int, last_id: int):
+    """ Запуск парсера.
 
-    for iteration_number, book_id in enumerate(range(start_page, end_page + 1), 1):
+    Args:
+        first_id: С какой книги начать скачивание.
+        last_id: На какой книге закончить скачивание.
+    """
+
+    book_id = first_id
+    iteration_number = 1
+
+    while last_id >= book_id:
+        successful_iteration = True
         try:
             page_book = get_book_page(book_id)
             book_info = parse_book_page(page_book, book_id)
@@ -251,12 +260,18 @@ def starting_parser(start_page: int, end_page: int):
             file_extension = parsing_url(cover_url).get('extension')
             download_image(image_name, cover_url, file_extension)
             print(f'{iteration_number}. {filepath}')
+
         except requests.HTTPError:
             print(f'По заданному адресу книга {book_id} отсутствует', file=sys.stderr)
+
         except requests.ConnectionError:
-            # todo разобраться с обрывом связи, сейчас просто задержка в 10 секунд на итерации
             print('Неполадки с интернетом. Восстановление соединения...', file=sys.stderr)
-            time.sleep(10)
+            successful_iteration = False
+            time.sleep(30)
+
+        if successful_iteration:
+            book_id += 1
+            iteration_number += 1
 
 
 def main():
@@ -267,10 +282,10 @@ def main():
         description='Downloading books.'
     )
     parser.add_argument(
-        'start_id', default=1, type=int,
+        'start_id', type=int,
         help='Which book to start downloading.')
     parser.add_argument(
-        'end_id', default=10, type=int,
+        'end_id', type=int,
         help='Which book to download.')
     args = parser.parse_args()
 
