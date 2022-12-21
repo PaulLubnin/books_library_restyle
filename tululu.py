@@ -85,21 +85,18 @@ def parse_cover_url(bs4_soup: BeautifulSoup) -> str:
     return cover_url
 
 
-def parse_book_title(bs4_soup: BeautifulSoup, book_id) -> dict:
+def parse_book_title(bs4_soup: BeautifulSoup) -> list:
     """Функция получения названия и автора книги.
 
     Args:
         bs4_soup (int): HTML контент.
         book_id (int): Идентификационный номер книги.
     Returns:
-        dict: Словарь с ключами: book_title, book_author.
+        list: [book_title, book_author].
     """
 
     title_tag = bs4_soup.find('h1')
-    book_title, book_author = [elem.strip().replace(': ', '. ') for elem in title_tag.text.split(' :: ')]
-    book_data = {'book_title': f'{book_id}.{book_title}',
-                 'book_author': book_author}
-    return book_data
+    return [elem.strip().replace(': ', '. ') for elem in title_tag.text.split(' :: ')]
 
 
 def parse_book_comments(bs4_soup: BeautifulSoup) -> list:
@@ -182,18 +179,16 @@ def parse_book_page(page: str, book_id: int) -> dict:
         book_id (int): Идентификационный номер книги.
 
     Returns:
-        book_data (dict): Словарь с ключами: title, author, genre, cover_url, comments.
+        Словарь с ключами: title, author, genre, cover_url, comments.
     """
 
     soup = BeautifulSoup(page, 'lxml')
-    book_data = {
-        'title': parse_book_title(soup, book_id).get('book_title'),
-        'author': parse_book_title(soup, book_id).get('book_author'),
-        'genre': parse_book_genre(soup),
-        'cover_url': parse_cover_url(soup),
-        'comments': parse_book_comments(soup),
-    }
-    return book_data
+    book_title, book_author = parse_book_title(soup)
+    return {'title': f'{book_id}.{book_title}',
+            'author': book_author,
+            'genre': parse_book_genre(soup),
+            'cover_url': parse_cover_url(soup),
+            'comments': parse_book_comments(soup)}
 
 
 def save_data(saved_file: bytes, filename: str) -> None:
