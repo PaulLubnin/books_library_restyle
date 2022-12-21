@@ -12,28 +12,6 @@ from pathvalidate import sanitize_filename
 TULULU_URl = 'https://tululu.org'
 
 
-def parsing_url(url: str) -> dict:
-    """Функция парсит урл.
-
-    Args:
-        url (str): Ссылка на книгу.
-
-    Returns:
-        dict: Словарь с ключами: site_name, extension, image_name, [query_key].
-    """
-
-    unq_url = unquote(url)
-    split_url = urlsplit(unq_url)
-    serialised_data = {'site_name': split_url.netloc}
-    if split_url.query:
-        query_key, book_id = split_url.query.split('=')
-        serialised_data[query_key] = book_id
-    if split_url.path:
-        serialised_data['extension'] = split_url.path.split('.')[-1]
-        serialised_data['image_name'] = split_url.path.split('.')[0].split('/')[-1]
-    return serialised_data
-
-
 def get_books_file(book_id: int) -> bytes:
     """Функция для получения книги.
 
@@ -67,6 +45,64 @@ def get_book_page(book_id: int) -> str:
     response.raise_for_status()
     check_for_redirect(response)
     return response.text
+
+
+def get_cover_file(cover_url: str) -> bytes:
+    """ Функция делает запрос для получения обложки книги
+
+    Args:
+        cover_url (str): Ссылка на обложку.
+
+    Returns:
+        str: HTML контент
+    """
+
+    response = requests.get(cover_url)
+    response.raise_for_status()
+    check_for_redirect(response)
+    return response.content
+
+
+def parsing_url(url: str) -> dict:
+    """Функция парсит урл.
+
+    Args:
+        url (str): Ссылка на книгу.
+
+    Returns:
+        dict: Словарь с ключами: site_name, extension, image_name, [query_key].
+    """
+
+    unq_url = unquote(url)
+    split_url = urlsplit(unq_url)
+    serialised_data = {'site_name': split_url.netloc}
+    if split_url.query:
+        query_key, book_id = split_url.query.split('=')
+        serialised_data[query_key] = book_id
+    if split_url.path:
+        serialised_data['extension'] = split_url.path.split('.')[-1]
+        serialised_data['image_name'] = split_url.path.split('.')[0].split('/')[-1]
+    return serialised_data
+
+
+def parse_book_page(page: str, book_id: int) -> dict:
+    """Функция парсит страницу книги.
+
+    Args:
+        page (str): Страница книги в текстовом формате.
+        book_id (int): Идентификационный номер книги.
+
+    Returns:
+        Словарь с ключами: title, author, genre, cover_url, comments.
+    """
+
+    soup = BeautifulSoup(page, 'lxml')
+    book_title, book_author = parse_book_title(soup)
+    return {'title': f'{book_id}.{book_title}',
+            'author': book_author,
+            'genre': parse_book_genre(soup),
+            'cover_url': parse_cover_url(soup, book_id),
+            'comments': parse_book_comments(soup)}
 
 
 def parse_cover_url(bs4_soup: BeautifulSoup, book_id) -> str:
@@ -130,32 +166,28 @@ def parse_book_genre(bs4_soup: BeautifulSoup) -> list:
         return [elem.strip() for elem in genre.split(',')]
 
 
-def download_image(book_id: int, folder: str = 'covers/') -> None:
-    """Функция для скачивания обложки книги
+def download_image(image_name: str, cover_url: str, file_extension: str, folder: str = 'covers/') -> None:
+    """Функция для скачивания обложки книги.
 
     Args:
-        book_id (int): Cсылка на книгу, обложку которой необходимо скачать.
+        image_name (str): Название обложки.
+        cover_url (str): Ссылка на обложку.
+        file_extension (str): Расширение файла обложки.
         folder (str): Папка, куда сохранять.
     """
 
-    page_book = get_book_page(book_id)
-    if parse_book_page(page_book, book_id):
-        cover_url = parse_book_page(page_book, book_id).get('cover_url')
-        folder = sanitize_filename(folder)
-        response = requests.get(cover_url)
-        response.raise_for_status()
-        cover = response.content
-        image_name = parsing_url(cover_url).get('image_name')
-        file_extension = parsing_url(cover_url).get('extension')
-        cover_path = f'{create_path(image_name, folder)}.{file_extension}'
-        save_data(cover, cover_path)
+    cover = get_cover_file(cover_url)
+    folder = sanitize_filename(folder)
+    cover_path = f'{create_path(image_name, folder)}.{file_extension}'
+    save_data(cover, cover_path)
 
 
-def download_txt(book_id: int, folder: str = 'books/') -> str:
+def download_txt(book_id: int, book_name: str, folder: str = 'books/') -> str:
     """Функция для скачивания текстовых файлов.
 
     Args:
         book_id (int): Cсылка на текст, который хочется скачать.
+        book_name (str): Название книги.
         folder (str): Папка, куда сохранять.
 
     Returns:
@@ -164,32 +196,10 @@ def download_txt(book_id: int, folder: str = 'books/') -> str:
 
     book = get_books_file(book_id)
     folder = sanitize_filename(folder)
-    page_book = get_book_page(book_id)
-    if book and page_book:
-        book_name = parse_book_page(page_book, book_id).get('title')
+    if book:
         book_path = f'{create_path(book_name, folder)}.txt'
         save_data(book, book_path)
         return book_path
-
-
-def parse_book_page(page: str, book_id: int) -> dict:
-    """Функция парсит страницу книги.
-
-    Args:
-        page (str): Страница книги в тектовом формате.
-        book_id (int): Идентификационный номер книги.
-
-    Returns:
-        Словарь с ключами: title, author, genre, cover_url, comments.
-    """
-
-    soup = BeautifulSoup(page, 'lxml')
-    book_title, book_author = parse_book_title(soup)
-    return {'title': f'{book_id}.{book_title}',
-            'author': book_author,
-            'genre': parse_book_genre(soup),
-            'cover_url': parse_cover_url(soup, book_id),
-            'comments': parse_book_comments(soup)}
 
 
 def save_data(saved_file: bytes, filename: str) -> None:
@@ -225,8 +235,32 @@ def check_for_redirect(response) -> None:
             raise requests.HTTPError
 
 
+def starting_parser(start_page: int, end_page: int):
+    """ Запуск парсера. """
+
+    for iteration_number, book_id in enumerate(range(start_page, end_page + 1), 1):
+        try:
+            page_book = get_book_page(book_id)
+            book_info = parse_book_page(page_book, book_id)
+            book_name = book_info.get('title')
+            filepath = download_txt(book_id, book_name)
+            if not filepath:
+                continue
+            cover_url = book_info.get('cover_url')
+            image_name = parsing_url(cover_url).get('image_name')
+            file_extension = parsing_url(cover_url).get('extension')
+            download_image(image_name, cover_url, file_extension)
+            print(f'{iteration_number}. {filepath}')
+        except requests.HTTPError:
+            print(f'По заданному адресу книга {book_id} отсутствует', file=sys.stderr)
+        except requests.ConnectionError:
+            # todo разобраться с обрывом связи, сейчас просто задержка в 10 секунд на итерации
+            print('Неполадки с интернетом. Восстановление соединения...', file=sys.stderr)
+            time.sleep(10)
+
+
 def main():
-    """Функция запуска скрипта из командной строки."""
+    """ Запуска скрипта из командной строки. """
 
     parser = argparse.ArgumentParser(
         prog='tululu.py',
@@ -244,19 +278,7 @@ def main():
         print(f'Первый аргумент должен быть меньше второго.\npython tululu.py {args.end_id} {args.start_id}')
         sys.exit()
 
-    for iteration_number, book_id in enumerate(range(args.start_id, args.end_id + 1), 1):
-        try:
-            filepath = download_txt(book_id)
-            if not filepath:
-                continue
-            print(f'{iteration_number}. {filepath}')
-            download_image(book_id)
-        except requests.HTTPError:
-            print(f'По заданному адресу книга {book_id} отсутствует', file=sys.stderr)
-        except requests.ConnectionError:
-            # todo разобраться с обрывом связи, сейчас просто задержка в 10 секунд на итерации
-            print('Неполадки с интернетом. Восстановление соединения...', file=sys.stderr)
-            time.sleep(10)
+    starting_parser(args.start_id, args.end_id)
 
 
 if __name__ == '__main__':
