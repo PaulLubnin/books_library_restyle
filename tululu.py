@@ -48,12 +48,8 @@ def get_books_file(book_id: int) -> bytes:
     payload = {'id': book_id}
     response = requests.get(url, params=payload)
     response.raise_for_status()
-    try:
-        check_for_redirect(response)
-        print([elem.status_code == 302 for elem in response.history])
-        return response.content
-    except requests.HTTPError:
-        print(f'Book {book_id} is not found')
+    check_for_redirect(response)
+    return response.content
 
 
 def get_book_page(book_id: int) -> str:
@@ -69,11 +65,8 @@ def get_book_page(book_id: int) -> str:
     url = f'{TULULU_URl}/b{book_id}'
     response = requests.get(url)
     response.raise_for_status()
-    try:
-        check_for_redirect(response)
-        return response.text
-    except requests.HTTPError:
-        print(f'Book {book_id} parsing failed')
+    check_for_redirect(response)
+    return response.text
 
 
 def parse_cover_url(bs4_soup: BeautifulSoup) -> str:
@@ -104,7 +97,7 @@ def parse_book_title(bs4_soup: BeautifulSoup, book_id) -> dict:
 
     title_tag = bs4_soup.find('h1')
     book_title, book_author = [elem.strip().replace(': ', '. ') for elem in title_tag.text.split(' :: ')]
-    book_data = {'book_title': f'{book_id}. {book_title}',
+    book_data = {'book_title': f'{book_id}.{book_title}',
                  'book_author': book_author}
     return book_data
 
@@ -231,9 +224,9 @@ def create_path(book_name: str, folder_name: str, ) -> Path:
 def check_for_redirect(response) -> None:
     """Функция проверки редиректа."""
 
-    print([elem.status_code == 302 for elem in response.history])
-    if (elem.status_code == 302 for elem in response.history):
-        raise requests.HTTPError
+    for elem in response.history:
+        if elem.status_code == 302:
+            raise requests.HTTPError
 
 
 def main():
@@ -263,7 +256,7 @@ def main():
             print(f'{iteration_number}. {filepath}')
             download_image(book_id)
         except requests.HTTPError:
-            print('Ошибка в адресе', file=sys.stderr)
+            print(f'По заданному адресу книга {book_id} отсутствует', file=sys.stderr)
         except requests.ConnectionError:
             # todo разобраться с обрывом связи, сейчас просто задержка в 10 секунд на итерации
             print('Неполадки с интернетом. Восстановление соединения...', file=sys.stderr)
