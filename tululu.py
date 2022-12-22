@@ -8,8 +8,9 @@ from urllib.parse import urljoin
 import requests
 from bs4 import BeautifulSoup
 from pathvalidate import sanitize_filename
+from tqdm import tqdm
 
-TULULU_URl = 'https://tululu.org'
+TULULU_URL = 'https://tululu.org'
 
 
 def get_books_file(book_id: int) -> bytes:
@@ -22,7 +23,7 @@ def get_books_file(book_id: int) -> bytes:
         bytes: Книга в байтах.
     """
 
-    url = f'{TULULU_URl}/txt.php'
+    url = f'{TULULU_URL}/txt.php'
     payload = {'id': book_id}
     response = requests.get(url, params=payload)
     response.raise_for_status()
@@ -40,7 +41,7 @@ def get_book_page(book_id: int) -> str:
         str: HTML контент.
     """
 
-    url = f'{TULULU_URl}/b{book_id}'
+    url = f'{TULULU_URL}/b{book_id}'
     response = requests.get(url)
     response.raise_for_status()
     check_for_redirect(response)
@@ -118,7 +119,7 @@ def parse_cover_url(bs4_soup: BeautifulSoup, book_id) -> str:
 
     book_image = bs4_soup.find('div', class_='bookimage')
     cover_url = book_image.find('img')['src']
-    cover_url = urljoin(f'{TULULU_URl}/b{book_id}/', cover_url)
+    cover_url = urljoin(f'{TULULU_URL}/b{book_id}/', cover_url)
     return cover_url
 
 
@@ -245,6 +246,8 @@ def starting_parser(first_id: int, last_id: int):
 
     book_id = first_id
     iteration_number = 1
+    progress_bar = (elem for elem in tqdm(range(last_id),
+                    initial=1, bar_format='{l_bar}{n_fmt}/{total_fmt}', ncols=100))
 
     while last_id >= book_id:
         successful_iteration = True
@@ -259,19 +262,19 @@ def starting_parser(first_id: int, last_id: int):
             image_name = parsing_url(cover_url).get('image_name')
             file_extension = parsing_url(cover_url).get('extension')
             download_image(image_name, cover_url, file_extension)
-            print(f'{iteration_number}. {filepath}')
 
         except requests.HTTPError:
-            print(f'По заданному адресу книга {book_id} отсутствует', file=sys.stderr)
+            print(f'\nПо заданному адресу книга номер {book_id} отсутствует', file=sys.stderr)
 
         except requests.ConnectionError:
-            print('Неполадки с интернетом. Восстановление соединения...', file=sys.stderr)
+            print('\nНеполадки с интернетом. Восстановление соединения...', file=sys.stderr)
             successful_iteration = False
             time.sleep(30)
 
         if successful_iteration:
             book_id += 1
             iteration_number += 1
+            progress_bar.__next__()
 
 
 def main():
