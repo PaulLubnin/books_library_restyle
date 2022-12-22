@@ -94,7 +94,7 @@ def parse_book_page(page: str, book_id: int) -> dict:
 
     soup = BeautifulSoup(page, 'lxml')
     book_title, book_author = parse_book_title(soup)
-    return {'title': f'{book_id}.{book_title}',
+    return {'title': f'{book_id}.{book_title}.txt',
             'author': book_author,
             'genre': parse_book_genre(soup),
             'cover_url': parse_cover_url(soup, book_id),
@@ -192,7 +192,7 @@ def download_txt(book_id: int, book_name: str, folder: str = 'books/') -> str:
     book = get_books_file(book_id)
     folder = sanitize_filename(folder)
     if book:
-        book_path = f'{create_path(book_name, folder)}.txt'
+        book_path = f'{create_path(book_name, folder)}'
         save_data(book, book_path)
         return book_path
 
@@ -248,9 +248,7 @@ def run_parser(first_id: int, last_id: int):
             page_book = get_book_page(book_id)
             book = parse_book_page(page_book, book_id)
             book_name = book.get('title')
-            filepath = download_txt(book_id, book_name)
-            if not filepath:
-                continue
+            download_txt(book_id, book_name)
             cover_url = book.get('cover_url')
             image_name = parsing_url(cover_url).get('image_name')
             file_extension = parsing_url(cover_url).get('extension')
