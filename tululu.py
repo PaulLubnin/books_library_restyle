@@ -219,8 +219,9 @@ def run_parser(first_id: int, last_id: int):
             book_name = book.get('title')
             download_txt(book_id, book_name)
             cover_url = book.get('cover_url')
-            image_name = parsing_url(cover_url).get('image_name')
-            file_extension = parsing_url(cover_url).get('extension')
+            image = parsing_url(cover_url)
+            image_name = image.get('image_name')
+            file_extension = image.get('extension')
             download_image(image_name, cover_url, file_extension)
 
         except requests.HTTPError:
