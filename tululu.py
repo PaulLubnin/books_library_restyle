@@ -13,52 +13,19 @@ from tqdm import tqdm
 TULULU_URL = 'https://tululu.org'
 
 
-def get_books_file(book_id: int) -> bytes:
-    """ Функция для получения книги.
+def get_file(file_url: str, book_id: int = None) -> bytes:
+    """ Функция делает запрос для получения файла.
 
     Args:
         book_id: Идентификационный номер книги.
+        file_url: Ссылка на файл.
 
     Returns:
-        bytes: Книга в байтах.
+        bytes: HTML контент.
     """
 
-    url = f'{TULULU_URL}/txt.php'
     payload = {'id': book_id}
-    response = requests.get(url, params=payload)
-    response.raise_for_status()
-    check_for_redirect(response)
-    return response.content
-
-
-def get_book_page(book_id: int) -> str:
-    """ Функция делает запрос для получения страницы книги
-
-    Args:
-        book_id: Идентификационный номер книги.
-
-    Returns:
-        str: HTML контент.
-    """
-
-    url = f'{TULULU_URL}/b{book_id}'
-    response = requests.get(url)
-    response.raise_for_status()
-    check_for_redirect(response)
-    return response.text
-
-
-def get_cover_file(cover_url: str) -> bytes:
-    """ Функция делает запрос для получения обложки книги.
-
-    Args:
-        cover_url: Ссылка на обложку.
-
-    Returns:
-        str: HTML контент.
-    """
-
-    response = requests.get(cover_url)
+    response = requests.get(file_url, params=payload)
     response.raise_for_status()
     check_for_redirect(response)
     return response.content
@@ -71,22 +38,17 @@ def parsing_url(url: str) -> dict:
         url: Ссылка на книгу.
 
     Returns:
-        dict: Словарь с ключами: site_name, extension, image_name, [query_key].
+        dict: Словарь с ключами: extension, image_name.
     """
 
     unq_url = unquote(url)
     split_url = urlsplit(unq_url)
-    serialised_data = {'site_name': split_url.netloc}
-    if split_url.query:
-        query_key, book_id = split_url.query.split('=')
-        serialised_data[query_key] = book_id
     if split_url.path:
-        serialised_data['extension'] = split_url.path.split('.')[-1]
-        serialised_data['image_name'] = split_url.path.split('.')[0].split('/')[-1]
-    return serialised_data
+        return {'extension': split_url.path.split('.')[-1],
+                'image_name': split_url.path.split('.')[0].split('/')[-1]}
 
 
-def parse_book_page(page: str, book_id: int) -> dict:
+def parse_book_page(page: bytes, book_id: int) -> dict:
     """ Функция парсит страницу книги.
 
     Args:
@@ -99,7 +61,7 @@ def parse_book_page(page: str, book_id: int) -> dict:
 
     soup = BeautifulSoup(page, 'lxml')
     book_title, book_author = parse_book_title(soup)
-    return {'title': f'{book_id}.{book_title}',
+    return {'title': f'{book_id}.{book_title}.txt',
             'author': book_author,
             'genre': parse_book_genre(soup),
             'cover_url': parse_cover_url(soup, book_id),
@@ -161,10 +123,9 @@ def parse_book_genre(bs4_soup: BeautifulSoup) -> list:
         list: Список с жанрами книги.
     """
 
-    book_genre = bs4_soup.find_all('span', class_='d_book')
-    for elem in book_genre:
-        title, genre = elem.text.split(':')
-        return [elem.strip() for elem in genre.split(',')]
+    book_genre = bs4_soup.find('span', class_='d_book')
+    genre = book_genre.text.split(':')[1].strip().split(',')
+    return [elem.strip() for elem in genre]
 
 
 def download_image(image_name: str, cover_url: str, file_extension: str, folder: str = 'covers/') -> None:
@@ -177,10 +138,10 @@ def download_image(image_name: str, cover_url: str, file_extension: str, folder:
         folder: Папка, куда сохранять.
     """
 
-    cover = get_cover_file(cover_url)
+    cover = get_file(cover_url)
     folder = sanitize_filename(folder)
     cover_path = f'{create_path(image_name, folder)}.{file_extension}'
-    save_data(cover, cover_path)
+    save_to_file(cover, cover_path)
 
 
 def download_txt(book_id: int, book_name: str, folder: str = 'books/') -> str:
@@ -195,15 +156,16 @@ def download_txt(book_id: int, book_name: str, folder: str = 'books/') -> str:
         str: Путь до файла, куда сохранён текст.
     """
 
-    book = get_books_file(book_id)
+    book_url = f'{TULULU_URL}/txt.php'
+    book = get_file(book_url, book_id)
     folder = sanitize_filename(folder)
     if book:
-        book_path = f'{create_path(book_name, folder)}.txt'
-        save_data(book, book_path)
+        book_path = f'{create_path(book_name, folder)}'
+        save_to_file(book, book_path)
         return book_path
 
 
-def save_data(saved_file: bytes, filename: str) -> None:
+def save_to_file(saved_file: bytes, filename: str) -> None:
     """ Функция для сохранения книг, обложек книг.
 
     Args:
@@ -231,12 +193,11 @@ def create_path(book_name: str, folder_name: str, ) -> Path:
 def check_for_redirect(response) -> None:
     """ Функция проверки редиректа. """
 
-    for elem in response.history:
-        if elem.status_code == 302:
-            raise requests.HTTPError
+    if response.history:
+        raise requests.HTTPError
 
 
-def starting_parser(first_id: int, last_id: int):
+def run_parser(first_id: int, last_id: int):
     """ Запуск парсера.
 
     Args:
@@ -251,16 +212,16 @@ def starting_parser(first_id: int, last_id: int):
 
     while last_id >= book_id:
         successful_iteration = True
+        book_page_url = f'{TULULU_URL}/b{book_id}/'
         try:
-            page_book = get_book_page(book_id)
-            book_info = parse_book_page(page_book, book_id)
-            book_name = book_info.get('title')
-            filepath = download_txt(book_id, book_name)
-            if not filepath:
-                continue
-            cover_url = book_info.get('cover_url')
-            image_name = parsing_url(cover_url).get('image_name')
-            file_extension = parsing_url(cover_url).get('extension')
+            page_book = get_file(book_page_url)
+            book = parse_book_page(page_book, book_id)
+            book_name = book.get('title')
+            download_txt(book_id, book_name)
+            cover_url = book.get('cover_url')
+            image = parsing_url(cover_url)
+            image_name = image.get('image_name')
+            file_extension = image.get('extension')
             download_image(image_name, cover_url, file_extension)
 
         except requests.HTTPError:
@@ -296,7 +257,7 @@ def main():
         print(f'Первый аргумент должен быть меньше второго.\npython tululu.py {args.end_id} {args.start_id}')
         sys.exit()
 
-    starting_parser(args.start_id, args.end_id)
+    run_parser(args.start_id, args.end_id)
 
 
 if __name__ == '__main__':
