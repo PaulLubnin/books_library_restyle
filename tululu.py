@@ -13,52 +13,19 @@ from tqdm import tqdm
 TULULU_URL = 'https://tululu.org'
 
 
-def get_books_file(book_id: int) -> bytes:
-    """ Функция для получения книги.
+def get_file(file_url: str, book_id: int = None) -> bytes:
+    """ Функция делает запрос для получения файла.
 
     Args:
         book_id: Идентификационный номер книги.
+        file_url: Ссылка на файл.
 
     Returns:
-        bytes: Книга в байтах.
+        bytes: HTML контент.
     """
 
-    url = f'{TULULU_URL}/txt.php'
     payload = {'id': book_id}
-    response = requests.get(url, params=payload)
-    response.raise_for_status()
-    check_for_redirect(response)
-    return response.content
-
-
-def get_book_page(book_id: int) -> str:
-    """ Функция делает запрос для получения страницы книги
-
-    Args:
-        book_id: Идентификационный номер книги.
-
-    Returns:
-        str: HTML контент.
-    """
-
-    url = f'{TULULU_URL}/b{book_id}/'
-    response = requests.get(url)
-    response.raise_for_status()
-    check_for_redirect(response)
-    return response.text
-
-
-def get_cover_file(cover_url: str) -> bytes:
-    """ Функция делает запрос для получения обложки книги.
-
-    Args:
-        cover_url: Ссылка на обложку.
-
-    Returns:
-        str: HTML контент.
-    """
-
-    response = requests.get(cover_url)
+    response = requests.get(file_url, params=payload)
     response.raise_for_status()
     check_for_redirect(response)
     return response.content
@@ -81,7 +48,7 @@ def parsing_url(url: str) -> dict:
                 'image_name': split_url.path.split('.')[0].split('/')[-1]}
 
 
-def parse_book_page(page: str, book_id: int) -> dict:
+def parse_book_page(page: bytes, book_id: int) -> dict:
     """ Функция парсит страницу книги.
 
     Args:
@@ -171,10 +138,10 @@ def download_image(image_name: str, cover_url: str, file_extension: str, folder:
         folder: Папка, куда сохранять.
     """
 
-    cover = get_cover_file(cover_url)
+    cover = get_file(cover_url)
     folder = sanitize_filename(folder)
     cover_path = f'{create_path(image_name, folder)}.{file_extension}'
-    save_data(cover, cover_path)
+    save_to_file(cover, cover_path)
 
 
 def download_txt(book_id: int, book_name: str, folder: str = 'books/') -> str:
@@ -189,15 +156,16 @@ def download_txt(book_id: int, book_name: str, folder: str = 'books/') -> str:
         str: Путь до файла, куда сохранён текст.
     """
 
-    book = get_books_file(book_id)
+    book_url = f'{TULULU_URL}/txt.php'
+    book = get_file(book_url, book_id)
     folder = sanitize_filename(folder)
     if book:
         book_path = f'{create_path(book_name, folder)}'
-        save_data(book, book_path)
+        save_to_file(book, book_path)
         return book_path
 
 
-def save_data(saved_file: bytes, filename: str) -> None:
+def save_to_file(saved_file: bytes, filename: str) -> None:
     """ Функция для сохранения книг, обложек книг.
 
     Args:
@@ -244,8 +212,9 @@ def run_parser(first_id: int, last_id: int):
 
     while last_id >= book_id:
         successful_iteration = True
+        book_page_url = f'{TULULU_URL}/b{book_id}/'
         try:
-            page_book = get_book_page(book_id)
+            page_book = get_file(book_page_url)
             book = parse_book_page(page_book, book_id)
             book_name = book.get('title')
             download_txt(book_id, book_name)
