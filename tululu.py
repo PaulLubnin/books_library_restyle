@@ -13,7 +13,7 @@ from tqdm import tqdm
 TULULU_URL = 'https://tululu.org'
 
 
-def get_file(file_url: str, book_id: int = None) -> bytes:
+def get_content(file_url: str, book_id: int = None) -> bytes:
     """ Функция делает запрос для получения файла.
 
     Args:
@@ -31,7 +31,7 @@ def get_file(file_url: str, book_id: int = None) -> bytes:
     return response.content
 
 
-def parsing_url(url: str) -> dict:
+def parse_url(url: str) -> dict:
     """ Функция парсит урл.
 
     Args:
@@ -44,7 +44,7 @@ def parsing_url(url: str) -> dict:
     unq_url = unquote(url)
     split_url = urlsplit(unq_url)
     if split_url.path:
-        return {'extension': split_url.path.split('.')[-1],
+        return {'extension': f'.{split_url.path.split(".")[-1]}',
                 'image_name': split_url.path.split('.')[0].split('/')[-1]}
 
 
@@ -138,9 +138,9 @@ def download_image(image_name: str, cover_url: str, file_extension: str, folder:
         folder: Папка, куда сохранять.
     """
 
-    cover = get_file(cover_url)
+    cover = get_content(cover_url)
     folder = sanitize_filename(folder)
-    cover_path = f'{create_path(image_name, folder)}.{file_extension}'
+    cover_path = create_path(image_name, folder) + file_extension
     save_to_file(cover, cover_path)
 
 
@@ -157,27 +157,26 @@ def download_txt(book_id: int, book_name: str, folder: str = 'books/') -> str:
     """
 
     book_url = f'{TULULU_URL}/txt.php'
-    book = get_file(book_url, book_id)
+    book = get_content(book_url, book_id)
     folder = sanitize_filename(folder)
-    if book:
-        book_path = f'{create_path(book_name, folder)}'
-        save_to_file(book, book_path)
-        return book_path
+    book_path = create_path(book_name, folder)
+    save_to_file(book, book_path)
+    return book_path
 
 
-def save_to_file(saved_file: bytes, filename: str) -> None:
+def save_to_file(content: bytes, filepath: str) -> None:
     """ Функция для сохранения книг, обложек книг.
 
     Args:
-        saved_file: Файл в байтах.
-        filename: Название файла.
+        content: Контент в байтах.
+        filepath: Путь к файлу.
     """
 
-    with open(filename, 'wb') as file:
-        file.write(saved_file)
+    with open(filepath, 'wb') as file:
+        file.write(content)
 
 
-def create_path(book_name: str, folder_name: str, ) -> Path:
+def create_path(book_name: str, folder_name: str, ) -> str:
     """ Функция создает папку и возвращает её путь.
 
     Args:
@@ -185,9 +184,9 @@ def create_path(book_name: str, folder_name: str, ) -> Path:
         folder_name: Название папки, куда нужно будет сложить файлы.
     """
 
-    save_folder = Path.cwd() / folder_name
-    Path(save_folder).mkdir(parents=True, exist_ok=True)
-    return save_folder / book_name
+    folder = Path.cwd() / folder_name
+    Path(folder).mkdir(parents=True, exist_ok=True)
+    return str(folder / book_name)
 
 
 def check_for_redirect(response) -> None:
@@ -214,12 +213,12 @@ def run_parser(first_id: int, last_id: int):
         successful_iteration = True
         book_page_url = f'{TULULU_URL}/b{book_id}/'
         try:
-            page_book = get_file(book_page_url)
+            page_book = get_content(book_page_url)
             book = parse_book_page(page_book, book_id)
             book_name = book.get('title')
             download_txt(book_id, book_name)
             cover_url = book.get('cover_url')
-            image = parsing_url(cover_url)
+            image = parse_url(cover_url)
             image_name = image.get('image_name')
             file_extension = image.get('extension')
             download_image(image_name, cover_url, file_extension)
