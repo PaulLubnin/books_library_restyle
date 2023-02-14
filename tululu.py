@@ -38,13 +38,14 @@ def parse_url(url: str) -> dict:
         url: Ссылка на книгу.
 
     Returns:
-        dict: Словарь с ключами: extension, image_name.
+        dict: Словарь с ключами: book_id, extension, image_name.
     """
 
     unq_url = unquote(url)
     split_url = urlsplit(unq_url)
     if split_url.path:
-        return {'extension': f'.{split_url.path.split(".")[-1]}',
+        return {'book_id': f'{split_url.path.strip("/")[1:]}',
+                'extension': f'.{split_url.path.split(".")[-1]}',
                 'image_name': split_url.path.split('.')[0].split('/')[-1]}
 
 
@@ -56,14 +57,16 @@ def parse_book_page(page: bytes, book_id: int) -> dict:
         book_id: Идентификационный номер книги.
 
     Returns:
-        Словарь с ключами: title, author, genre, cover_url, comments.
+        Словарь с ключами: title, author, img_src, book_path, genres, cover_url, comments.
     """
 
     soup = BeautifulSoup(page, 'lxml')
     book_title, book_author = parse_book_title(soup)
     return {'title': f'{book_id}.{book_title}.txt',
             'author': book_author,
-            'genre': parse_book_genre(soup),
+            'img_src': str(Path('images', f'{book_id}.jpeg')),
+            'book_path': str(Path('books', f'{book_id}.{book_title}.txt')),
+            'genres': parse_book_genre(soup),
             'cover_url': parse_cover_url(soup, book_id),
             'comments': parse_book_comments(soup)}
 
