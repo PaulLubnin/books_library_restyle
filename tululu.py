@@ -82,9 +82,9 @@ def parse_cover_url(bs4_soup: BeautifulSoup, book_id) -> str:
         str: Ссылка на обложку книги.
     """
 
-    book_image = bs4_soup.find('div', class_='bookimage')
-    cover_url = book_image.find('img')['src']
-    cover_url = urljoin(f'{TULULU_URL}/b{book_id}/', cover_url)
+    cover_url_selector = '.bookimage img[src]'
+    cover_link = bs4_soup.select_one(cover_url_selector)['src']
+    cover_url = urljoin(f'{TULULU_URL}/b{book_id}/', cover_link)
     return cover_url
 
 
@@ -98,8 +98,8 @@ def parse_book_title(bs4_soup: BeautifulSoup) -> list:
         list: [book_title, book_author].
     """
 
-    title_tag = bs4_soup.find('h1')
-    return [elem.strip().replace(': ', '. ') for elem in title_tag.text.split(' :: ')]
+    title_tag = bs4_soup.select('h1')
+    return [elem.strip().replace(': ', '. ') for elem in title_tag[0].text.split(' :: ')]
 
 
 def parse_book_comments(bs4_soup: BeautifulSoup) -> list:
@@ -112,8 +112,9 @@ def parse_book_comments(bs4_soup: BeautifulSoup) -> list:
         list: Список с комментариями.
     """
 
-    book_comments = bs4_soup.find_all('div', class_='texts')
-    return [elem.find('span').text for elem in book_comments]
+    book_comments_selector = '.texts .black'
+    book_comments = bs4_soup.select(book_comments_selector)
+    return [elem.string for elem in book_comments]
 
 
 def parse_book_genre(bs4_soup: BeautifulSoup) -> list:
@@ -125,10 +126,9 @@ def parse_book_genre(bs4_soup: BeautifulSoup) -> list:
     Returns:
         list: Список с жанрами книги.
     """
-
-    book_genre = bs4_soup.find('span', class_='d_book')
-    genre = book_genre.text.split(':')[1].strip().split(',')
-    return [elem.strip() for elem in genre]
+    book_genre_selector = 'span.d_book a'
+    book_genre_sel = bs4_soup.select(book_genre_selector)
+    return [elem.string for elem in book_genre_sel]
 
 
 def download_image(image_name: str, cover_url: str, file_extension: str, folder: str = 'covers/') -> None:

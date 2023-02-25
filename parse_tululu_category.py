@@ -10,7 +10,7 @@ from tululu import TULULU_URL, parse_url, download_txt, get_content, parse_book_
 
 def get_links_from_one_page(page_reference: str) -> list:
     """
-    Получение ссылок на книги со страницы со списком книг по жанрам.
+    Получение ссылок на книги с страницы со списком книг по жанрам.
 
     Args:
         page_reference: ссылка на страницу.
@@ -21,8 +21,9 @@ def get_links_from_one_page(page_reference: str) -> list:
     response = requests.get(page_reference)
     response.raise_for_status()
     bs4_soup = BeautifulSoup(response.content, 'lxml')
-    books = bs4_soup.find_all('table', class_='d_book')
-    book_references = [urljoin(TULULU_URL, url.find('a')['href']) for url in books]
+    books_selector = '.d_book .bookimage a[href]'
+    books_links = bs4_soup.select(books_selector)
+    book_references = [urljoin(TULULU_URL, url['href']) for url in books_links]
     return book_references
 
 
