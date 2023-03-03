@@ -1,14 +1,16 @@
-import json
+import argparse
 import sys
+import time
 from urllib.parse import urljoin
 
 import requests
 from bs4 import BeautifulSoup
+from tqdm import tqdm
 
-from tululu import TULULU_URL, parse_url, download_txt, get_content, parse_book_page, download_image
+from tululu import TULULU_URL, parse_url, run_parser
 
 
-def get_links_from_one_page(page_reference: str) -> list:
+def parse_links_from_page(page_reference: str) -> list:
     """
     Получение ссылок на книги с страницы со списком книг по жанрам.
 
@@ -18,6 +20,7 @@ def get_links_from_one_page(page_reference: str) -> list:
     Returns:
         Список ссылок на книги.
     """
+
     response = requests.get(page_reference)
     response.raise_for_status()
     bs4_soup = BeautifulSoup(response.content, 'lxml')
@@ -27,44 +30,62 @@ def get_links_from_one_page(page_reference: str) -> list:
     return book_references
 
 
-def get_many_of_references(page_count: int) -> list:
+def get_links(start_page: int, end_page: int) -> list:
     """
-    Получение списка ссылок на книги с нескольких страниц.
+    Получение списка ссылок на книги с нескольких страниц жанра.
 
     Args:
-        page_count: количество страниц.
+        start_page: начальная страница
+        end_page: послденяя страница
 
     Returns:
-        Список ссылок на книги.
+        Список ссылок на книги
     """
+
     science_fiction_books = f'{TULULU_URL}/l55/'
-    references_to_book_pages = [f'{science_fiction_books}/{page_number}' for page_number in range(1, page_count + 1)]
+    references_to_book_pages = [urljoin(science_fiction_books, str(page_number))
+                                for page_number in range(start_page, end_page)]
     books_links = []
     for reference in references_to_book_pages:
-        books_links.extend(get_links_from_one_page(reference))
+        books_links.extend(parse_links_from_page(reference))
     return books_links
 
 
-if __name__ == '__main__':
-    number_of_pages = 1
-    all_books = []
-    for book_page_url in get_many_of_references(number_of_pages):
-        book_id = parse_url(book_page_url).get('book_id')
-        try:
-            page_book = get_content(book_page_url)
-            book = parse_book_page(page_book, book_id)
-            all_books.append(book)
-            book_name = book.get('title')
-            download_txt(book_id, book_name)
-            cover_url = book.get('cover_url')
-            image = parse_url(cover_url)
-            image_name = image.get('image_name')
-            file_extension = image.get('extension')
-            download_image(image_name, cover_url, file_extension)
+def main():
+    """ Запуска скрипта из командной строки. """
 
+    parser = argparse.ArgumentParser(
+        prog='parse_tululu_category.py',
+        description='Downloading books by genre.'
+    )
+    parser.add_argument(
+        '--start_page', type=int,
+        help='Which page to start downloading.'
+    )
+    parser.add_argument(
+        '--end_page', type=int, default=702,
+        help='Last page to download.'
+    )
+    args = parser.parse_args()
+    if args.start_page > args.end_page:
+        print(f'Первый аргумент должен быть меньше второго.\npython parse_tululu_category.py {args.end_page} {args.start_page}')
+        sys.exit()
+
+    all_books_url = get_links(args.start_page, args.end_page)
+    progress_bar = (elem for elem in tqdm(range(len(all_books_url)),
+                    initial=1, bar_format='{l_bar}{n_fmt}/{total_fmt}', ncols=100))
+
+    for book_url in all_books_url:
+        book_id = int(parse_url(book_url).get('book_id'))
+        try:
+            run_parser(book_id)
         except requests.HTTPError:
             print(f'\nПо заданному адресу книга номер {book_id} отсутствует', file=sys.stderr)
+        except requests.ConnectionError:
+            print('\nНеполадки с интернетом. Восстановление соединения...', file=sys.stderr)
+            time.sleep(30)
+        progress_bar.__next__()
 
-    books_json = json.dumps(all_books, ensure_ascii=False)
-    with open('books.json', 'a', encoding='utf-8') as file:
-        file.write(books_json)
+
+if __name__ == '__main__':
+    main()

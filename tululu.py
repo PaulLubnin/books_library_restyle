@@ -1,4 +1,5 @@
 import argparse
+import json
 import sys
 import time
 from pathlib import Path
@@ -64,7 +65,7 @@ def parse_book_page(page: bytes, book_id: int) -> dict:
     book_title, book_author = parse_book_title(soup)
     return {'title': f'{book_id}.{book_title}.txt',
             'author': book_author,
-            'img_src': str(Path('images', f'{book_id}.jpeg')),
+            'img_src': str(Path('covers', f'{book_id}.jpeg')),
             'book_path': str(Path('books', f'{book_id}.{book_title}.txt')),
             'genres': parse_book_genre(soup),
             'cover_url': parse_cover_url(soup, book_id),
@@ -199,45 +200,28 @@ def check_for_redirect(response) -> None:
         raise requests.HTTPError
 
 
-def run_parser(first_id: int, last_id: int):
-    """ Запуск парсера.
+def run_parser(book_id: int):
+    """
+    Запускает парсер и сохраняет информацию о книге в json файл.
 
     Args:
-        first_id: С какой книги начать скачивание.
-        last_id: На какой книге закончить скачивание.
+        book_id: идентификационный номер книги, которую надо скачать
     """
 
-    book_id = first_id
-    iteration_number = 1
-    progress_bar = (elem for elem in tqdm(range(last_id),
-                    initial=1, bar_format='{l_bar}{n_fmt}/{total_fmt}', ncols=100))
+    book_page_url = f'{TULULU_URL}/b{book_id}/'
+    page_book = get_content(book_page_url)
+    book = parse_book_page(page_book, book_id)
+    book_name = book.get('title')
+    download_txt(book_id, book_name)
+    cover_url = book.get('cover_url')
+    image = parse_url(cover_url)
+    image_name = image.get('image_name')
+    file_extension = image.get('extension')
+    download_image(image_name, cover_url, file_extension)
 
-    while last_id >= book_id:
-        successful_iteration = True
-        book_page_url = f'{TULULU_URL}/b{book_id}/'
-        try:
-            page_book = get_content(book_page_url)
-            book = parse_book_page(page_book, book_id)
-            book_name = book.get('title')
-            download_txt(book_id, book_name)
-            cover_url = book.get('cover_url')
-            image = parse_url(cover_url)
-            image_name = image.get('image_name')
-            file_extension = image.get('extension')
-            download_image(image_name, cover_url, file_extension)
-
-        except requests.HTTPError:
-            print(f'\nПо заданному адресу книга номер {book_id} отсутствует', file=sys.stderr)
-
-        except requests.ConnectionError:
-            print('\nНеполадки с интернетом. Восстановление соединения...', file=sys.stderr)
-            successful_iteration = False
-            time.sleep(30)
-
-        if successful_iteration:
-            book_id += 1
-            iteration_number += 1
-            progress_bar.__next__()
+    books_json = json.dumps(book, ensure_ascii=False)
+    with open('books.json', 'a', encoding='utf-8') as file:
+        file.write(books_json)
 
 
 def main():
@@ -254,12 +238,27 @@ def main():
         'end_id', type=int,
         help='Which book to download.')
     args = parser.parse_args()
-
     if args.start_id > args.end_id:
         print(f'Первый аргумент должен быть меньше второго.\npython tululu.py {args.end_id} {args.start_id}')
         sys.exit()
 
-    run_parser(args.start_id, args.end_id)
+    book_id = args.start_id
+    progress_bar = (elem for elem in tqdm(range(args.end_id),
+                    initial=1, bar_format='{l_bar}{n_fmt}/{total_fmt}', ncols=100))
+
+    while args.end_id >= book_id:
+        successful_iteration = True
+        try:
+            run_parser(book_id)
+        except requests.HTTPError:
+            print(f'\nПо заданному адресу книга номер {book_id} отсутствует', file=sys.stderr)
+        except requests.ConnectionError:
+            print('\nНеполадки с интернетом. Восстановление соединения...', file=sys.stderr)
+            successful_iteration = False
+            time.sleep(30)
+        if successful_iteration:
+            book_id += 1
+            progress_bar.__next__()
 
 
 if __name__ == '__main__':
