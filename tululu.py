@@ -202,7 +202,8 @@ def check_for_redirect(response) -> None:
 def run_parser(book_id: int,
                dest_folder: str = 'media',
                skip_images: bool = False,
-               skip_txt: bool = False):
+               skip_txt: bool = False,
+               json_path: str = 'media'):
     """
     Запускает парсер и сохраняет информацию о книге в json файл.
 
@@ -211,6 +212,7 @@ def run_parser(book_id: int,
         dest_folder: папка назначения, куда необходимо сохранить файлы
         skip_images: скачивать обложку или нет
         skip_txt: скачивать или нет txt файл
+        json_path: куда сохранить JSON файл
     """
 
     book_page_url = f'{TULULU_URL}/b{book_id}/'
@@ -227,7 +229,8 @@ def run_parser(book_id: int,
         download_image(image_name, cover_url, file_extension, dest_folder)
 
     books_json = json.dumps(book, ensure_ascii=False)
-    with open(Path(dest_folder, 'books.json'), 'a', encoding='utf-8') as file:
+    json_path =
+    with open(Path(json_path, 'books.json'), 'a', encoding='utf-8') as file:
         file.write(books_json)
 
 

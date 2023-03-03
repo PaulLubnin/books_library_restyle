@@ -1,6 +1,7 @@
 import argparse
 import sys
 import time
+from pathlib import Path
 from urllib.parse import urljoin
 
 import requests
@@ -50,6 +51,22 @@ def get_links(start_page: int, end_page: int) -> list:
     for reference in references_to_book_pages:
         books_links.extend(parse_links_from_page(reference))
     return books_links
+
+
+def create_json_path(arguments: argparse.Namespace) -> str:
+    """
+    Получение пути для сохранениея JSON файла.
+
+    Args:
+        arguments: аргументы командной строки
+
+    Returns:
+        Путь, куда сохранить JSON файл
+    """
+
+    if arguments.json_path:
+        return Path(arguments.json_path)
+    return Path(arguments.dest_folder)
 
 
 def get_command_line_arguments():
@@ -107,6 +124,7 @@ def main():
     dest_folder = sanitize_filename(arguments.dest_folder)
     skip_images = arguments.skip_imgs
     skip_txt = arguments.skip_txt
+    json_path = get_json_path(arguments)
     all_books_url = get_links(arguments.start_page, arguments.end_page)
     progress_bar = (elem for elem in tqdm(range(len(all_books_url)),
                     initial=1, bar_format='{l_bar}{n_fmt}/{total_fmt}', ncols=100))
@@ -114,7 +132,7 @@ def main():
     for book_url in all_books_url:
         book_id = int(parse_url(book_url).get('book_id'))
         try:
-            run_parser(book_id, dest_folder, skip_images, skip_txt)
+            run_parser(book_id, dest_folder, skip_images, skip_txt, json_path)
         except requests.HTTPError:
             print(f'\nПо заданному адресу книга номер {book_id} отсутствует', file=sys.stderr)
         except requests.ConnectionError:
