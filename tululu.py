@@ -199,13 +199,14 @@ def check_for_redirect(response) -> None:
         raise requests.HTTPError
 
 
-def run_parser(book_id: int, dest_folder: str):
+def run_parser(book_id: int, dest_folder: str = 'media', skip_images: bool = False):
     """
     Запускает парсер и сохраняет информацию о книге в json файл.
 
     Args:
         book_id: идентификационный номер книги, которую надо скачать
         dest_folder: папка назначения, куда необходимо сохранить файлы
+        skip_images: скачивать обложку или нет
     """
 
     book_page_url = f'{TULULU_URL}/b{book_id}/'
@@ -213,11 +214,12 @@ def run_parser(book_id: int, dest_folder: str):
     book = parse_book_page(page_book, book_id)
     book_name = book.get('title')
     download_txt(book_id, book_name, dest_folder)
-    cover_url = book.get('cover_url')
-    image = parse_url(cover_url)
-    image_name = image.get('image_name')
-    file_extension = image.get('extension')
-    download_image(image_name, cover_url, file_extension, dest_folder)
+    if not skip_images:
+        cover_url = book.get('cover_url')
+        image = parse_url(cover_url)
+        image_name = image.get('image_name')
+        file_extension = image.get('extension')
+        download_image(image_name, cover_url, file_extension, dest_folder)
 
     books_json = json.dumps(book, ensure_ascii=False)
     with open(Path(dest_folder, 'books.json'), 'a', encoding='utf-8') as file:
@@ -262,7 +264,7 @@ def main():
     while arguments.end_id >= book_id:
         successful_iteration = True
         try:
-            run_parser(book_id, 'media')
+            run_parser(book_id)
         except requests.HTTPError:
             print(f'\nПо заданному адресу книга номер {book_id} отсутствует', file=sys.stderr)
         except requests.ConnectionError:
