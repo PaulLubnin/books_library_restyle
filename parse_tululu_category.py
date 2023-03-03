@@ -59,12 +59,28 @@ def main():
         description='Downloading books by genre.'
     )
     parser.add_argument(
-        '--start_page', type=int,
+        '-s', '--start_page', type=int,
         help='Which page to start downloading.'
     )
     parser.add_argument(
-        '--end_page', type=int, default=702,
+        '-e', '--end_page', type=int, default=702,
         help='Last page to download.'
+    )
+    parser.add_argument(
+        '-d', '--dest_folder', type=str, default='media',
+        help='Path to directory with parsing results: pictures, books, JSON.'
+    )
+    parser.add_argument(
+        '-si', '--skip_imgs',
+        help="Don't download pictures."
+    )
+    parser.add_argument(
+        '-st', '--skip_txt',
+        help="Don't download books."
+    )
+    parser.add_argument(
+        '-j', '--json_path',
+        help='Specify your path to the *.json file with the results.'
     )
     args = parser.parse_args()
     if args.start_page > args.end_page:
