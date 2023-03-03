@@ -8,7 +8,6 @@ from urllib.parse import urljoin
 
 import requests
 from bs4 import BeautifulSoup
-from pathvalidate import sanitize_filename
 from tqdm import tqdm
 
 TULULU_URL = 'https://tululu.org'
@@ -132,7 +131,7 @@ def parse_book_genre(bs4_soup: BeautifulSoup) -> list:
     return [elem.string for elem in book_genre_sel]
 
 
-def download_image(image_name: str, cover_url: str, file_extension: str, folder: str = 'covers/') -> None:
+def download_image(image_name: str, cover_url: str, file_extension: str, folder: str) -> None:
     """ Функция для скачивания обложки книги.
 
     Args:
@@ -143,12 +142,12 @@ def download_image(image_name: str, cover_url: str, file_extension: str, folder:
     """
 
     cover = get_content(cover_url)
-    folder = sanitize_filename(folder)
+    folder = Path(folder, 'covers')
     cover_path = create_path(image_name, folder) + file_extension
     save_to_file(cover, cover_path)
 
 
-def download_txt(book_id: int, book_name: str, folder: str = 'books/') -> str:
+def download_txt(book_id: int, book_name: str, folder: str) -> str:
     """ Функция для скачивания текстовых файлов.
 
     Args:
@@ -162,7 +161,7 @@ def download_txt(book_id: int, book_name: str, folder: str = 'books/') -> str:
 
     book_url = f'{TULULU_URL}/txt.php'
     book = get_content(book_url, book_id)
-    folder = sanitize_filename(folder)
+    folder = Path(folder, 'books')
     book_path = create_path(book_name, folder)
     save_to_file(book, book_path)
     return book_path
@@ -200,32 +199,38 @@ def check_for_redirect(response) -> None:
         raise requests.HTTPError
 
 
-def run_parser(book_id: int):
+def run_parser(book_id: int, dest_folder: str):
     """
     Запускает парсер и сохраняет информацию о книге в json файл.
 
     Args:
         book_id: идентификационный номер книги, которую надо скачать
+        dest_folder: папка назначения, куда необходимо сохранить файлы
     """
 
     book_page_url = f'{TULULU_URL}/b{book_id}/'
     page_book = get_content(book_page_url)
     book = parse_book_page(page_book, book_id)
     book_name = book.get('title')
-    download_txt(book_id, book_name)
+    download_txt(book_id, book_name, dest_folder)
     cover_url = book.get('cover_url')
     image = parse_url(cover_url)
     image_name = image.get('image_name')
     file_extension = image.get('extension')
-    download_image(image_name, cover_url, file_extension)
+    download_image(image_name, cover_url, file_extension, dest_folder)
 
     books_json = json.dumps(book, ensure_ascii=False)
-    with open('books.json', 'a', encoding='utf-8') as file:
+    with open(Path(dest_folder, 'books.json'), 'a', encoding='utf-8') as file:
         file.write(books_json)
 
 
-def main():
-    """ Запуска скрипта из командной строки. """
+def get_command_line_arguments():
+    """
+    Получение аргументов командной строки.
+
+    Returns:
+        Аргументы командной строки
+    """
 
     parser = argparse.ArgumentParser(
         prog='tululu.py',
@@ -238,18 +243,26 @@ def main():
         'end_id', type=int,
         help='Which book to download.')
     args = parser.parse_args()
+
     if args.start_id > args.end_id:
         print(f'Первый аргумент должен быть меньше второго.\npython tululu.py {args.end_id} {args.start_id}')
         sys.exit()
 
-    book_id = args.start_id
-    progress_bar = (elem for elem in tqdm(range(args.end_id),
+    return args
+
+
+def main():
+    """ Запуска скрипта. """
+
+    arguments = get_command_line_arguments()
+    book_id = arguments.start_id
+    progress_bar = (elem for elem in tqdm(range(arguments.end_id),
                     initial=1, bar_format='{l_bar}{n_fmt}/{total_fmt}', ncols=100))
 
-    while args.end_id >= book_id:
+    while arguments.end_id >= book_id:
         successful_iteration = True
         try:
-            run_parser(book_id)
+            run_parser(book_id, 'media')
         except requests.HTTPError:
             print(f'\nПо заданному адресу книга номер {book_id} отсутствует', file=sys.stderr)
         except requests.ConnectionError:
