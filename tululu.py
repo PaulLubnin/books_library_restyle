@@ -199,7 +199,10 @@ def check_for_redirect(response) -> None:
         raise requests.HTTPError
 
 
-def run_parser(book_id: int, dest_folder: str = 'media', skip_images: bool = False):
+def run_parser(book_id: int,
+               dest_folder: str = 'media',
+               skip_images: bool = False,
+               skip_txt: bool = False):
     """
     Запускает парсер и сохраняет информацию о книге в json файл.
 
@@ -207,13 +210,15 @@ def run_parser(book_id: int, dest_folder: str = 'media', skip_images: bool = Fal
         book_id: идентификационный номер книги, которую надо скачать
         dest_folder: папка назначения, куда необходимо сохранить файлы
         skip_images: скачивать обложку или нет
+        skip_txt: скачивать или нет txt файл
     """
 
     book_page_url = f'{TULULU_URL}/b{book_id}/'
     page_book = get_content(book_page_url)
     book = parse_book_page(page_book, book_id)
     book_name = book.get('title')
-    download_txt(book_id, book_name, dest_folder)
+    if not skip_txt:
+        download_txt(book_id, book_name, dest_folder)
     if not skip_images:
         cover_url = book.get('cover_url')
         image = parse_url(cover_url)
