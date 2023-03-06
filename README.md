@@ -1,6 +1,6 @@
 # Парсер книг с сайта tululu.org
 
-Программа для скачивания книг/
+Программа для скачивания книг.
 
 ### Как установить
 
@@ -18,7 +18,7 @@ python tululu.py [--start_id] [--end_id]
 ```
 - для скачивания книг по жанрам
 ```
-python parse_tululu_category.py --start_page [номер страницы] --end_id [номер страницы]
+python parse_tululu_category.py --start_page [номер страницы] --end_page [номер страницы]
 ```
 #### Пример использования:
 
