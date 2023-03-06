@@ -53,7 +53,7 @@ def get_links(start_page: int, end_page: int) -> list:
     return books_links
 
 
-def create_json_path(arguments: argparse.Namespace) -> str:
+def create_json_path(arguments: argparse.Namespace):
     """
     Получение пути для сохранениея JSON файла.
 
@@ -65,7 +65,8 @@ def create_json_path(arguments: argparse.Namespace) -> str:
     """
 
     if arguments.json_path:
-        return Path(arguments.json_path)
+        Path(Path.cwd() / arguments.json_path).mkdir(parents=True, exist_ok=True)
+        return arguments.json_path
     return Path(arguments.dest_folder)
 
 
@@ -124,7 +125,7 @@ def main():
     dest_folder = sanitize_filename(arguments.dest_folder)
     skip_images = arguments.skip_imgs
     skip_txt = arguments.skip_txt
-    json_path = get_json_path(arguments)
+    json_path = create_json_path(arguments)
     all_books_url = get_links(arguments.start_page, arguments.end_page)
     progress_bar = (elem for elem in tqdm(range(len(all_books_url)),
                     initial=1, bar_format='{l_bar}{n_fmt}/{total_fmt}', ncols=100))

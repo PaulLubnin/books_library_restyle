@@ -229,7 +229,7 @@ def run_parser(book_id: int,
         download_image(image_name, cover_url, file_extension, dest_folder)
 
     books_json = json.dumps(book, ensure_ascii=False)
-    json_path =
+    json_path = json_path if json_path != 'media' else dest_folder
     with open(Path(json_path, 'books.json'), 'a', encoding='utf-8') as file:
         file.write(books_json)
 
