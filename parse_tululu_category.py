@@ -45,10 +45,9 @@ def get_links(start_page: int, end_page: int) -> list:
     """
 
     science_fiction_reference = f'{TULULU_URL}/l55/'
-    references_to_book_pages = [urljoin(science_fiction_reference, str(page_number))
-                                for page_number in range(start_page, end_page)]
     books_links = []
-    for reference in references_to_book_pages:
+    for page_number in range(start_page, end_page):
+        reference = urljoin(science_fiction_reference, str(page_number))
         books_links.extend(parse_links_from_page(reference))
     return books_links
 
