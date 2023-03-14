@@ -44,8 +44,8 @@ def get_links(start_page: int, end_page: int) -> list:
         Список ссылок на книги
     """
 
-    science_fiction_books = f'{TULULU_URL}/l55/'
-    references_to_book_pages = [urljoin(science_fiction_books, str(page_number))
+    science_fiction_reference = f'{TULULU_URL}/l55/'
+    references_to_book_pages = [urljoin(science_fiction_reference, str(page_number))
                                 for page_number in range(start_page, end_page)]
     books_links = []
     for reference in references_to_book_pages:
@@ -112,7 +112,9 @@ def main():
     Path(Path.cwd() / json_path).mkdir(parents=True, exist_ok=True)
     all_books_url = get_links(arguments.start_page, arguments.end_page)
     progress_bar = (elem for elem in tqdm(range(len(all_books_url)),
-                                          initial=1, bar_format='{l_bar}{n_fmt}/{total_fmt}', ncols=100))
+                                          initial=1,
+                                          bar_format='{l_bar}{n_fmt}/{total_fmt}',
+                                          ncols=100))
 
     for book_url in all_books_url:
         book_id = int(parse_url(book_url).get('book_id'))
