@@ -108,13 +108,6 @@ def get_command_line_arguments():
     )
     args = parser.parse_args()
 
-    if not args.start_page:
-        print('Необходимо указать страницу, с которой желаете начать скачивание.')
-        sys.exit()
-    if args.start_page > args.end_page:
-        print(f'Первый аргумент должен быть меньше второго.\npython parse_tululu_category.py {args.end_page} {args.start_page}')
-        sys.exit()
-
     return args
 
 
@@ -122,6 +115,14 @@ def main():
     """ Запуска скрипта. """
 
     arguments = get_command_line_arguments()
+    if not arguments.start_page:
+        print('Необходимо указать страницу, с которой желаете начать скачивание.')
+        sys.exit()
+    if arguments.start_page > arguments.end_page:
+        print(f'Первый аргумент должен быть меньше второго.\n'
+              f'python parse_tululu_category.py {arguments.end_page} {arguments.start_page}')
+        sys.exit()
+
     dest_folder = sanitize_filename(arguments.dest_folder)
     skip_images = arguments.skip_imgs
     skip_txt = arguments.skip_txt
