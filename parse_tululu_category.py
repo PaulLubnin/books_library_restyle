@@ -9,7 +9,7 @@ from bs4 import BeautifulSoup
 from pathvalidate import sanitize_filename
 from tqdm import tqdm
 
-from tululu import TULULU_URL, parse_url, run_parser
+from tululu import TULULU_URL, parse_url, run_parser, check_for_redirect
 
 
 def parse_links_from_page(page_reference: str) -> list:
@@ -25,10 +25,11 @@ def parse_links_from_page(page_reference: str) -> list:
 
     response = requests.get(page_reference)
     response.raise_for_status()
+    check_for_redirect(response)
     bs4_soup = BeautifulSoup(response.content, 'lxml')
     books_selector = '.d_book .bookimage a[href]'
     books_links = bs4_soup.select(books_selector)
-    book_references = [urljoin(TULULU_URL, url['href']) for url in books_links]
+    book_references = [urljoin(page_reference, url['href']) for url in books_links]
     return book_references
 
 
