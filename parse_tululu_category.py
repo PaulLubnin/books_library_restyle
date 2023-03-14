@@ -53,23 +53,6 @@ def get_links(start_page: int, end_page: int) -> list:
     return books_links
 
 
-def create_json_path(arguments: argparse.Namespace):
-    """
-    Получение пути для сохранениея JSON файла.
-
-    Args:
-        arguments: аргументы командной строки
-
-    Returns:
-        Путь, куда сохранить JSON файл
-    """
-
-    if arguments.json_path:
-        Path(Path.cwd() / arguments.json_path).mkdir(parents=True, exist_ok=True)
-        return arguments.json_path
-    return Path(arguments.dest_folder)
-
-
 def get_command_line_arguments():
     """
     Получение аргументов командной строки.
@@ -122,14 +105,14 @@ def main():
         print(f'Первый аргумент должен быть меньше второго.\n'
               f'python parse_tululu_category.py {arguments.end_page} {arguments.start_page}')
         sys.exit()
-
     dest_folder = sanitize_filename(arguments.dest_folder)
     skip_images = arguments.skip_imgs
     skip_txt = arguments.skip_txt
-    json_path = create_json_path(arguments)
+    json_path = arguments.json_path if arguments.json_path else dest_folder
+    Path(Path.cwd() / json_path).mkdir(parents=True, exist_ok=True)
     all_books_url = get_links(arguments.start_page, arguments.end_page)
     progress_bar = (elem for elem in tqdm(range(len(all_books_url)),
-                    initial=1, bar_format='{l_bar}{n_fmt}/{total_fmt}', ncols=100))
+                                          initial=1, bar_format='{l_bar}{n_fmt}/{total_fmt}', ncols=100))
 
     for book_url in all_books_url:
         book_id = int(parse_url(book_url).get('book_id'))
