@@ -127,21 +127,26 @@ def main():
     json_path = arguments.json_path if arguments.json_path else dest_folder
     Path(Path.cwd() / json_path).mkdir(parents=True, exist_ok=True)
     all_books_url = get_links(arguments.start_page, arguments.end_page)
-    progress_bar = (elem for elem in tqdm(range(len(all_books_url)),
+    references_count = len(all_books_url)
+    progress_bar = (elem for elem in tqdm(range(references_count),
                                           initial=1,
                                           bar_format='{l_bar}{n_fmt}/{total_fmt}',
                                           ncols=100))
-
-    for book_url in all_books_url:
-        book_id = int(parse_url(book_url).get('book_id'))
+    reference_index = 0
+    while reference_index < references_count:
+        successful_iteration = True
+        book_id = int(parse_url(all_books_url[reference_index]).get('book_id'))
         try:
             run_parser(book_id, dest_folder, skip_images, skip_txt, json_path)
         except requests.HTTPError:
             print(f'\nПо заданному адресу книга номер {book_id} отсутствует', file=sys.stderr)
         except requests.ConnectionError:
             print('\nНеполадки с интернетом. Восстановление соединения...', file=sys.stderr)
+            successful_iteration = False
             time.sleep(30)
-        progress_bar.__next__()
+        if successful_iteration:
+            reference_index += 1
+            progress_bar.__next__()
 
 
 if __name__ == '__main__':
