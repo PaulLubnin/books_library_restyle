@@ -12,21 +12,36 @@ from tqdm import tqdm
 from tululu import TULULU_URL, parse_url, run_parser, check_for_redirect
 
 
-def parse_links_from_page(page_reference: str) -> list:
+def get_page(page_reference: str) -> bytes:
+    """
+    Запрос на получение страницы.
+
+    Args:
+        page_reference: ссылка на источник.
+
+    Returns:
+        Страница в байтах.
+    """
+
+    response = requests.get(page_reference)
+    response.raise_for_status()
+    check_for_redirect(response)
+    return response.content
+
+
+def parse_links_from_page(page: bytes, page_reference: str) -> list:
     """
     Получение ссылок на книги с страницы со списком книг по жанрам.
 
     Args:
+        page: страница в байтах.
         page_reference: ссылка на страницу.
 
     Returns:
         Список ссылок на книги.
     """
 
-    response = requests.get(page_reference)
-    response.raise_for_status()
-    check_for_redirect(response)
-    bs4_soup = BeautifulSoup(response.content, 'lxml')
+    bs4_soup = BeautifulSoup(page, 'lxml')
     books_selector = '.d_book .bookimage a[href]'
     books_links = bs4_soup.select(books_selector)
     book_references = [urljoin(page_reference, url['href']) for url in books_links]
@@ -49,7 +64,8 @@ def get_links(start_page: int, end_page: int) -> list:
     books_links = []
     for page_number in range(start_page, end_page):
         reference = urljoin(science_fiction_reference, str(page_number))
-        books_links.extend(parse_links_from_page(reference))
+        page = get_page(reference)
+        books_links.extend(parse_links_from_page(page, reference))
     return books_links
 
 
