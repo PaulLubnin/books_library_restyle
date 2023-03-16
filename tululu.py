@@ -199,11 +199,11 @@ def check_for_redirect(response) -> None:
         raise requests.HTTPError
 
 
-def run_parser(book_id: int,
-               dest_folder: str = 'media',
-               skip_images: bool = False,
-               skip_txt: bool = False,
-               json_path: str = 'media'):
+def get_book(book_id: int,
+             dest_folder: str = 'media',
+             skip_images: bool = False,
+             skip_txt: bool = False,
+             json_path: str = 'media'):
     """
     Запускает парсер и сохраняет информацию о книге в json файл.
 
@@ -272,7 +272,7 @@ def main():
     while arguments.end_id >= book_id:
         successful_iteration = True
         try:
-            run_parser(book_id)
+            get_book(book_id)
         except requests.HTTPError:
             print(f'\nПо заданному адресу книга номер {book_id} отсутствует', file=sys.stderr)
         except requests.ConnectionError:

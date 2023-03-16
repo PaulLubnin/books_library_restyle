@@ -9,7 +9,7 @@ from bs4 import BeautifulSoup
 from pathvalidate import sanitize_filename
 from tqdm import tqdm
 
-from tululu import TULULU_URL, parse_url, run_parser, check_for_redirect
+from tululu import TULULU_URL, parse_url, get_book, check_for_redirect
 
 
 def get_page(page_reference: str) -> bytes:
@@ -137,7 +137,7 @@ def main():
         successful_iteration = True
         book_id = int(parse_url(all_books_url[reference_index]).get('book_id'))
         try:
-            run_parser(book_id, dest_folder, skip_images, skip_txt, json_path)
+            get_book(book_id, dest_folder, skip_images, skip_txt, json_path)
         except requests.HTTPError:
             print(f'\nПо заданному адресу книга номер {book_id} отсутствует', file=sys.stderr)
         except requests.ConnectionError:
