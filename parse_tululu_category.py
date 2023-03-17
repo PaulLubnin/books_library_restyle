@@ -9,7 +9,7 @@ from bs4 import BeautifulSoup
 from pathvalidate import sanitize_filename
 from tqdm import tqdm
 
-from tululu import TULULU_URL, parse_url, get_book, check_for_redirect
+from tululu import TULULU_URL, parse_url, get_book, check_for_redirect, save_json_file
 
 
 def get_page(page_reference: str) -> bytes:
@@ -106,7 +106,6 @@ def get_command_line_arguments():
         help='Specify your path to the *.json file with the results.'
     )
     args = parser.parse_args()
-
     return args
 
 
@@ -133,11 +132,13 @@ def main():
                                           bar_format='{l_bar}{n_fmt}/{total_fmt}',
                                           ncols=100))
     reference_index = 0
+    books = []
     while reference_index < references_count:
         successful_iteration = True
         book_id = int(parse_url(all_books_url[reference_index]).get('book_id'))
         try:
-            get_book(book_id, dest_folder, skip_images, skip_txt, json_path)
+            book = get_book(book_id, dest_folder, skip_images, skip_txt)
+            books.append(book)
         except requests.HTTPError:
             print(f'\nПо заданному адресу книга номер {book_id} отсутствует', file=sys.stderr)
         except requests.ConnectionError:
@@ -147,6 +148,7 @@ def main():
         if successful_iteration:
             reference_index += 1
             progress_bar.__next__()
+    save_json_file(books, json_path)
 
 
 if __name__ == '__main__':

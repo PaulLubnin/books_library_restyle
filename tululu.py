@@ -199,11 +199,24 @@ def check_for_redirect(response) -> None:
         raise requests.HTTPError
 
 
+def save_json_file(books: list, folder: str = 'media'):
+    """
+    Сохраняет спсиок из книг в JSON файл.
+
+    Args:
+        books: спсиок с книгами.
+        folder: папка, куда сохранить JSON файл.
+    """
+
+    books_json = json.dumps(books, ensure_ascii=False)
+    with open(Path(folder, 'books.json'), 'a', encoding='utf-8') as file:
+        file.write(books_json)
+
+
 def get_book(book_id: int,
              dest_folder: str = 'media',
              skip_images: bool = False,
-             skip_txt: bool = False,
-             json_path: str = 'media'):
+             skip_txt: bool = False):
     """
     Запускает парсер и сохраняет информацию о книге в json файл.
 
@@ -212,7 +225,6 @@ def get_book(book_id: int,
         dest_folder: папка назначения, куда необходимо сохранить файлы
         skip_images: скачивать обложку или нет
         skip_txt: скачивать или нет txt файл
-        json_path: куда сохранить JSON файл
     """
 
     book_page_url = f'{TULULU_URL}/b{book_id}/'
@@ -227,11 +239,7 @@ def get_book(book_id: int,
         image_name = image.get('image_name')
         file_extension = image.get('extension')
         download_image(image_name, cover_url, file_extension, dest_folder)
-
-    books_json = json.dumps(book, ensure_ascii=False)
-    json_path = json_path if json_path != 'media' else dest_folder
-    with open(Path(json_path, 'books.json'), 'a', encoding='utf-8') as file:
-        file.write(books_json)
+    return book
 
 
 def get_command_line_arguments():
@@ -257,7 +265,6 @@ def get_command_line_arguments():
     if args.start_id > args.end_id:
         print(f'Первый аргумент должен быть меньше второго.\npython tululu.py {args.end_id} {args.start_id}')
         sys.exit()
-
     return args
 
 
@@ -267,12 +274,15 @@ def main():
     arguments = get_command_line_arguments()
     book_id = arguments.start_id
     progress_bar = (elem for elem in tqdm(range(arguments.end_id),
-                    initial=1, bar_format='{l_bar}{n_fmt}/{total_fmt}', ncols=100))
-
+                                          initial=1,
+                                          bar_format='{l_bar}{n_fmt}/{total_fmt}',
+                                          ncols=100))
+    books = []
     while arguments.end_id >= book_id:
         successful_iteration = True
         try:
-            get_book(book_id)
+            book = get_book(book_id)
+            books.append(book)
         except requests.HTTPError:
             print(f'\nПо заданному адресу книга номер {book_id} отсутствует', file=sys.stderr)
         except requests.ConnectionError:
@@ -282,6 +292,7 @@ def main():
         if successful_iteration:
             book_id += 1
             progress_bar.__next__()
+    save_json_file(books)
 
 
 if __name__ == '__main__':
