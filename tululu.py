@@ -208,9 +208,8 @@ def save_json_file(books: list, folder: str = 'media'):
         folder: папка, куда сохранить JSON файл.
     """
 
-    books_json = json.dumps(books, ensure_ascii=False)
     with open(Path(folder, 'books.json'), 'a', encoding='utf-8') as file:
-        file.write(books_json)
+        json.dump(books, file, ensure_ascii=False)
 
 
 def get_book(book_id: int,
