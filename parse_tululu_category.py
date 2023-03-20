@@ -9,24 +9,7 @@ from bs4 import BeautifulSoup
 from pathvalidate import sanitize_filename
 from tqdm import tqdm
 
-from tululu import TULULU_URL, parse_url, get_book, check_for_redirect, save_json_file
-
-
-def get_page(page_reference: str) -> bytes:
-    """
-    Запрос на получение страницы.
-
-    Args:
-        page_reference: ссылка на источник.
-
-    Returns:
-        Страница в байтах.
-    """
-
-    response = requests.get(page_reference)
-    response.raise_for_status()
-    check_for_redirect(response)
-    return response.content
+from tululu import TULULU_URL, parse_url, get_book, get_content, save_json_file
 
 
 def parse_links_from_page(page: bytes, page_reference: str) -> list:
@@ -64,7 +47,7 @@ def get_links(start_page: int, end_page: int) -> list:
     books_links = []
     for page_number in range(start_page, end_page):
         reference = urljoin(science_fiction_reference, str(page_number))
-        page = get_page(reference)
+        page = get_content(reference)
         books_links.extend(parse_links_from_page(page, reference))
     return books_links
 

@@ -13,19 +13,19 @@ from tqdm import tqdm
 TULULU_URL = 'https://tululu.org'
 
 
-def get_content(file_url: str, book_id: int = None) -> bytes:
-    """ Функция делает запрос для получения файла.
+def get_content(page_reference: str, book_id: int = None) -> bytes:
+    """ Функция делает запрос для получения всей страницы в HTML.
 
     Args:
         book_id: Идентификационный номер книги.
-        file_url: Ссылка на файл.
+        page_reference: ссылка на страницу.
 
     Returns:
-        bytes: HTML контент.
+        Страница в HTML формате.
     """
 
     payload = {'id': book_id}
-    response = requests.get(file_url, params=payload)
+    response = requests.get(page_reference, params=payload)
     response.raise_for_status()
     check_for_redirect(response)
     return response.content
