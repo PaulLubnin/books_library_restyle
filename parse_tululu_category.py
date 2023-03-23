@@ -45,10 +45,18 @@ def get_links(start_page: int, end_page: int) -> list:
 
     science_fiction_reference = f'{TULULU_URL}/l55/'
     books_links = []
-    for page_number in range(start_page, end_page):
-        reference = urljoin(science_fiction_reference, str(page_number))
-        page = get_content(reference)
-        books_links.extend(parse_links_from_page(page, reference))
+    while start_page < end_page:
+        successful_iteration = True
+        reference = urljoin(science_fiction_reference, str(start_page))
+        try:
+            page = get_content(reference)
+            books_links.extend(parse_links_from_page(page, reference))
+        except requests.ConnectionError:
+            print('При получении ссылок на книги пропала связь с Интернетом.', file=sys.stderr)
+            successful_iteration = False
+            time.sleep(20)
+        if successful_iteration:
+            start_page += 1
     return books_links
 
 
@@ -65,7 +73,7 @@ def get_command_line_arguments():
         description='Downloading books by genre.'
     )
     parser.add_argument(
-        '-s', '--start_page', type=int,
+        '-s', '--start_page', type=int, default=1,
         help='Which page to start downloading.'
     )
     parser.add_argument(
@@ -96,9 +104,6 @@ def main():
     """ Запуска скрипта. """
 
     arguments = get_command_line_arguments()
-    if not arguments.start_page:
-        print('Необходимо указать страницу, с которой желаете начать скачивание.')
-        sys.exit()
     if arguments.start_page > arguments.end_page:
         print(f'Первый аргумент должен быть меньше второго.\n'
               f'python parse_tululu_category.py {arguments.end_page} {arguments.start_page}')

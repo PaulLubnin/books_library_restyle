@@ -261,9 +261,6 @@ def get_command_line_arguments():
         help='Which book to download.')
     args = parser.parse_args()
 
-    if args.start_id > args.end_id:
-        print(f'Первый аргумент должен быть меньше второго.\npython tululu.py {args.end_id} {args.start_id}')
-        sys.exit()
     return args
 
 
@@ -271,6 +268,10 @@ def main():
     """ Запуска скрипта. """
 
     arguments = get_command_line_arguments()
+    if arguments.start_id > arguments.end_id:
+        print(f'Первый аргумент должен быть меньше второго.\n'
+              f'python tululu.py {arguments.end_id} {arguments.start_id}')
+        sys.exit()
     book_id = arguments.start_id
     progress_bar = (elem for elem in tqdm(range(arguments.end_id),
                                           initial=1,
