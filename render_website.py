@@ -23,12 +23,13 @@ def load_template(path, name):
 
 def render_pages():
     template = load_template('.', 'template.html')
-    book_quantity = 10
+    book_quantity = 5
     books = list(chunked(get_books(), book_quantity))
-
     for page_number, page_books in enumerate(books):
         page = template.render(
             books=page_books,
+            page_count=len(books),
+            current_page=page_number
         )
         with open(f'{templates_folder}/index{"" if not page_number else page_number}.html', 'w', encoding="utf8") as file:
             file.write(page)
