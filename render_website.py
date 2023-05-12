@@ -3,6 +3,7 @@ from pathlib import Path
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from livereload import Server
+from more_itertools import chunked
 
 
 def get_books():
@@ -12,23 +13,30 @@ def get_books():
     return books
 
 
-def on_reload():
-    template = env.get_template('template.html')
-    rendered_page = template.render(
-        books=get_books(),
+def load_template(path, name):
+    env = Environment(
+        loader=FileSystemLoader(path),
+        autoescape=select_autoescape(['html', 'xml'])
     )
+    return env.get_template(name)
 
-    with open('index.html', 'w', encoding="utf8") as file:
-        file.write(rendered_page)
+
+def render_pages():
+    template = load_template('.', 'template.html')
+    book_quantity = 10
+    books = list(chunked(get_books(), book_quantity))
+
+    for page_number, page_books in enumerate(books):
+        page = template.render(
+            books=page_books,
+        )
+        with open(f'{templates_folder}/index{"" if not page_number else page_number}.html', 'w', encoding="utf8") as file:
+            file.write(page)
 
 
 if __name__ == '__main__':
-    env = Environment(
-        loader=FileSystemLoader('.'),
-        autoescape=select_autoescape(['html', 'xml'])
-    )
-
-    on_reload()
+    templates_folder = 'pages'
+    render_pages()
     server = Server()
-    server.watch('template.html', on_reload)
-    server.serve(root='.')
+    server.watch('template.html', render_pages)
+    server.serve(root=templates_folder)
