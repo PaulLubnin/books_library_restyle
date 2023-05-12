@@ -37,7 +37,7 @@ def get_links(start_page: int, end_page: int) -> list:
 
     Args:
         start_page: начальная страница
-        end_page: послденяя страница
+        end_page: последняя страница
 
     Returns:
         Список ссылок на книги
@@ -51,6 +51,8 @@ def get_links(start_page: int, end_page: int) -> list:
         try:
             page = get_content(reference)
             books_links.extend(parse_links_from_page(page, reference))
+        except requests.HTTPError:
+            print('По заданному адресу страница отсутствует.', file=sys.stderr)
         except requests.ConnectionError:
             print('При получении ссылок на книги пропала связь с Интернетом.', file=sys.stderr)
             successful_iteration = False
