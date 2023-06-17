@@ -21,7 +21,7 @@ def load_template(path, name):
     return env.get_template(name)
 
 
-def render_pages():
+def render_pages(folder_name):
     template = load_template('.', 'template.html')
     book_quantity = 5
     books = list(chunked(get_books(), book_quantity))
@@ -31,13 +31,14 @@ def render_pages():
             page_count=len(books),
             current_page=page_number
         )
-        with open(f'{templates_folder}/index{"" if not page_number else page_number}.html', 'w', encoding="utf8") as file:
+        with open(f'{folder_name}/index{"" if not page_number else page_number}.html', 'w', encoding="utf8") as file:
             file.write(page)
 
 
 if __name__ == '__main__':
     templates_folder = 'pages'
-    render_pages()
+    Path(templates_folder).mkdir(parents=True, exist_ok=True)
+    render_pages(templates_folder)
     server = Server()
-    server.watch('template.html', render_pages)
+    server.watch('template.html', render_pages(templates_folder))
     server.serve(root=templates_folder)
