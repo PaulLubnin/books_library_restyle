@@ -175,7 +175,7 @@ def save_to_file(content: bytes, filepath: str) -> None:
         filepath: Путь к файлу.
     """
 
-    with open(filepath, 'wb') as file:
+    with open(Path(filepath), 'wb') as file:
         file.write(content)
 
 
@@ -187,7 +187,7 @@ def create_path(book_name: str, folder_name: str, ) -> str:
         folder_name: Название папки, куда нужно будет сложить файлы.
     """
 
-    folder = Path.cwd() / folder_name
+    folder = Path.cwd() / 'pages' / folder_name
     Path(folder).mkdir(parents=True, exist_ok=True)
     return str(folder / book_name)
 
@@ -199,12 +199,12 @@ def check_for_redirect(response) -> None:
         raise requests.HTTPError
 
 
-def save_json_file(books: list, folder: str = 'media'):
+def save_json_file(books: list, folder: str = 'pages/media'):
     """
-    Сохраняет спсиок из книг в JSON файл.
+    Сохраняет список из книг в JSON файл.
 
     Args:
-        books: спсиок с книгами.
+        books: список с книгами.
         folder: папка, куда сохранить JSON файл.
     """
 
@@ -246,7 +246,7 @@ def get_command_line_arguments():
     Получение аргументов командной строки.
 
     Returns:
-        Аргументы командной строки
+        Аргументы командной строки.
     """
 
     parser = argparse.ArgumentParser(
