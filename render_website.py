@@ -7,7 +7,7 @@ from more_itertools import chunked
 
 
 def get_books():
-    with open(Path('pages/media', 'books.json'), 'r', encoding='utf-8') as file:
+    with open(Path('docs/media', 'books.json'), 'r', encoding='utf-8') as file:
         books_json = file.read()
     books = json.loads(books_json)
     return books
@@ -36,7 +36,7 @@ def render_pages(folder_name):
 
 
 if __name__ == '__main__':
-    templates_folder = 'pages'
+    templates_folder = 'docs'
     Path(templates_folder).mkdir(parents=True, exist_ok=True)
     render_pages(templates_folder)
     server = Server()

@@ -187,7 +187,7 @@ def create_path(book_name: str, folder_name: str, ) -> str:
         folder_name: Название папки, куда нужно будет сложить файлы.
     """
 
-    folder = Path.cwd() / 'pages' / folder_name
+    folder = Path.cwd() / 'docs' / folder_name
     Path(folder).mkdir(parents=True, exist_ok=True)
     return str(folder / book_name)
 
@@ -199,7 +199,7 @@ def check_for_redirect(response) -> None:
         raise requests.HTTPError
 
 
-def save_json_file(books: list, folder: str = 'pages/media'):
+def save_json_file(books: list, folder: str = 'docs/media'):
     """
     Сохраняет список из книг в JSON файл.
 
