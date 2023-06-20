@@ -24,7 +24,7 @@ python parse_tululu_category.py --start_page [номер страницы] --end
 
 - программа начнет скачивать книги с 1 по 20
 ```
-python tululu.ru 1 20
+python tululu.py 1 20
 ```
 - программа начнет скачивать книги из раздела с жанрами с 600 по 601 станицы
 ```
@@ -34,7 +34,10 @@ python parse_tululu_category.py --start_page 600 --end_page 602
 ```
 python parse_tululu_category.py --start_page 600
 ```
-
+- запустить сайт
+```
+python render_website.py
+```
 
 ### Аргументы
 
