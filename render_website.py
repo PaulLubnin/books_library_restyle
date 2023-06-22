@@ -7,7 +7,7 @@ from more_itertools import chunked
 
 
 def get_books():
-    with open(Path('docs/media', 'books.json'), 'r', encoding='utf-8') as file:
+    with open(Path('media', 'books.json'), 'r', encoding='utf-8') as file:
         books_json = file.read()
     books = json.loads(books_json)
     return books
@@ -21,7 +21,7 @@ def load_template(path, name):
     return env.get_template(name)
 
 
-def render_pages(folder_name):
+def render_pages():
     template = load_template('.', 'template.html')
     book_quantity = 5
     books = list(chunked(get_books(), book_quantity))
@@ -31,14 +31,13 @@ def render_pages(folder_name):
             page_count=len(books),
             current_page=page_number
         )
-        with open(f'{folder_name}/index{"" if not page_number else page_number}.html', 'w', encoding="utf8") as file:
+        with open(Path(f'index{"" if not page_number else page_number}.html'), 'w', encoding="utf8") as file:
             file.write(page)
+    print('Site rebuilt.')
 
 
 if __name__ == '__main__':
-    templates_folder = 'docs'
-    Path(templates_folder).mkdir(parents=True, exist_ok=True)
-    render_pages(templates_folder)
     server = Server()
-    server.watch('template.html', render_pages(templates_folder))
-    server.serve(root=templates_folder)
+    render_pages()
+    server.watch('template.html', render_pages)
+    server.serve(root='.')
