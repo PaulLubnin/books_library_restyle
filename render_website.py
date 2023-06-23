@@ -23,7 +23,7 @@ def load_template(path, name):
 
 def render_pages():
     template = load_template('.', 'template.html')
-    book_quantity = 5
+    book_quantity = 100
     books = list(chunked(get_books(), book_quantity))
     for page_number, page_books in enumerate(books):
         page = template.render(
