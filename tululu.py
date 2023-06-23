@@ -64,7 +64,7 @@ def parse_book_page(page: bytes, book_id: int) -> dict:
     book_title, book_author = parse_book_title(soup)
     return {'title': f'{book_id}.{book_title}.txt',
             'author': book_author,
-            'img_src': str(Path('covers', f'{book_id}.jpeg')),
+            'img_src': str(Path('covers', f'{book_id}.jpg')),
             'book_path': str(Path('books', f'{book_id}.{book_title}.txt')),
             'genres': parse_book_genre(soup),
             'cover_url': parse_cover_url(soup, book_id),
