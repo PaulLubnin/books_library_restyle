@@ -25,9 +25,9 @@ def render_pages():
     folder = Path.cwd() / 'pages'
     Path(folder).mkdir(parents=True, exist_ok=True)
     template = load_template('.', 'template.html')
-    book_quantity = 100
+    book_quantity = 10
     books = list(chunked(get_books(), book_quantity))
-    for page_number, page_books in enumerate(books):
+    for page_number, page_books in enumerate(books, 1):
         page = template.render(
             books=page_books,
             page_count=len(books),
@@ -42,4 +42,4 @@ if __name__ == '__main__':
     server = Server()
     render_pages()
     server.watch('template.html', render_pages)
-    server.serve(root='./pages')
+    server.serve(default_filename='./pages/index1.html')
