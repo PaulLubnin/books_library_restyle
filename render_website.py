@@ -22,6 +22,8 @@ def load_template(path, name):
 
 
 def render_pages():
+    folder = Path.cwd() / 'pages'
+    Path(folder).mkdir(parents=True, exist_ok=True)
     template = load_template('.', 'template.html')
     book_quantity = 100
     books = list(chunked(get_books(), book_quantity))
@@ -31,7 +33,7 @@ def render_pages():
             page_count=len(books),
             current_page=page_number
         )
-        with open(Path(f'index{"" if not page_number else page_number}.html'), 'w', encoding="utf8") as file:
+        with open(Path(folder, f'index{"" if not page_number else page_number}.html'), 'w', encoding="utf-8") as file:
             file.write(page)
     print('Site rebuilt.')
 
@@ -40,4 +42,4 @@ if __name__ == '__main__':
     server = Server()
     render_pages()
     server.watch('template.html', render_pages)
-    server.serve(root='.')
+    server.serve(root='./pages')

@@ -17,17 +17,28 @@
     <div class="container mt-3">
         <div class="row">
             {% for book in books %}
-            <div class="col-5">
+            <div class="col-5 row">
                 <div class="card">
-                    <img src="/media/{{ book.img_src }}" class="card-img-top" alt="...">
-                    <div class="card-body">
-                        <h5 class="card-title">{{ book.title }}</h5>
-                        <p class="card-text">{{ book.author }}</p>
-                        {% if book.genres %}
-                        {% for genre in book.genres %}
-                        <p class="card-text"><small class="text-muted">{{ genre }}</small></p>
-                        {% endfor %}
-                        {% endif %}
+                    <div class="row">
+                        <div class="col">
+                            <img src="/media/{{ book.img_src }}" class="card-img-top" alt="...">
+                        </div>
+                        <div class="col">
+                            <div class="card-body">
+                                <h5 class="card-title">{{ book.title }}</h5>
+                                <p class="card-text">{{ book.author }}</p>
+                                {% if book.genres %}
+                                {% for genre in book.genres %}
+                                <p class="card-text"><small class="text-muted">{{ genre }}</small></p>
+                                {% endfor %}
+                                {% endif %}
+                                <p class="card-text">
+                                    <small class="text-muted">
+                                        <a href="/media/{{ book.book_path }}" target="_blank">Читать</a>
+                                    </small>
+                                </p>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

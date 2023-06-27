@@ -35,7 +35,7 @@ def parse_url(url: str) -> dict:
     """ Функция парсит урл.
 
     Args:
-        url: Ссылка на книгу.
+        url: Ссылка на книгу или обложку.
 
     Returns:
         dict: Словарь с ключами: book_id, extension, image_name.
@@ -62,12 +62,14 @@ def parse_book_page(page: bytes, book_id: int) -> dict:
 
     soup = BeautifulSoup(page, 'lxml')
     book_title, book_author = parse_book_title(soup)
+    cover_url = parse_cover_url(soup, book_id)
+    cover = parse_url(cover_url)
     return {'title': f'{book_id}.{book_title}.txt',
             'author': book_author,
-            'img_src': str(Path('covers', f'{book_id}.jpg')),
+            'img_src': str(Path('covers', f'{cover.get("image_name")}{cover.get("extension")}')),
             'book_path': str(Path('books', f'{book_id}.{book_title}.txt')),
             'genres': parse_book_genre(soup),
-            'cover_url': parse_cover_url(soup, book_id),
+            'cover_url': cover_url,
             'comments': parse_book_comments(soup)}
 
 
