@@ -18,7 +18,9 @@ pip install -r requirements.txt
 ```
 
 ### Как пользоваться
-Из папки с проектом наберите:
+Сначала необходимо скачать книги с сайта.
+
+Затем из папки с проектом наберите:
 - для скачивания книг по порядковому номеру
 ```
 python tululu.py [--start_id] [--end_id]
@@ -55,8 +57,7 @@ python render_website.py
 
 `--end_page` - номер страницы, на которой закончится скачивание
 
-### Посмотреть можно по адресу:
-https://paullubnin.github.io/books_library_restyle/index.html
+### Посмотреть можно [тут](https://paullubnin.github.io/books_library_restyle/pages/index1.html)
 
 ### Цель проекта
 Код написан в образовательных целях на онлайн-курсе для веб-разработчиков [dvmn.org](https://dvmn.org/).
