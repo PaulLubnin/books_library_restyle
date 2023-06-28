@@ -64,10 +64,10 @@ def parse_book_page(page: bytes, book_id: int) -> dict:
     book_title, book_author = parse_book_title(soup)
     cover_url = parse_cover_url(soup, book_id)
     cover = parse_url(cover_url)
-    return {'title': f'{book_id}.{book_title}.txt',
+    return {'title': book_title,
             'author': book_author,
             'img_src': str(Path('covers', f'{cover.get("image_name")}{cover.get("extension")}')),
-            'book_path': str(Path('books', f'{book_id}.{book_title}.txt')),
+            'book_path': str(Path('books', f'{book_title}.txt')),
             'genres': parse_book_genre(soup),
             'cover_url': cover_url,
             'comments': parse_book_comments(soup)}
@@ -233,7 +233,7 @@ def get_book(book_id: int,
     book = parse_book_page(page_book, book_id)
     book_name = book.get('title')
     if not skip_txt:
-        download_txt(book_id, book_name, dest_folder)
+        download_txt(book_id, f'{book_name}.txt', dest_folder)
     if not skip_images:
         cover_url = book.get('cover_url')
         image = parse_url(cover_url)
