@@ -68,8 +68,10 @@
         </nav>
         <div class="row justify-content-center">
             {% for book in books %}
-            <div class="col-5 row">
-                <div class="card">
+            <div class="col-5 row"
+                 style="padding: 0 1rem 1rem 1rem">
+                <div class="card"
+                     style="margin: 0 0.5rem 0.5rem 0.5rem; width: 100%">
                     <div class="row">
                         <div class="col">
                             <img src="../media/{{ book.img_src }}" class="card-img-top" alt="...">
