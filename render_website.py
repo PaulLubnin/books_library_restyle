@@ -34,7 +34,6 @@ def render_pages():
         )
         with open(Path(folder, f'index{page_number}.html'), 'w', encoding="utf-8") as file:
             file.write(page)
-    print('Site rebuilt.')
 
 
 if __name__ == '__main__':
