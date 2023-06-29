@@ -7,12 +7,14 @@ from more_itertools import chunked
 
 
 def get_books():
+    """Открытие JSON файла."""
     with open(Path('media', 'books.json'), 'r', encoding='utf-8') as file:
         books = json.load(file)
     return books
 
 
 def load_template(path, name):
+    """Загрузка шаблона для рендеринга страниц."""
     env = Environment(
         loader=FileSystemLoader(path),
         autoescape=select_autoescape(['html', 'xml'])
@@ -21,6 +23,7 @@ def load_template(path, name):
 
 
 def render_pages():
+    """Рендеринг страниц библиотеки."""
     folder = Path.cwd() / 'pages'
     Path(folder).mkdir(parents=True, exist_ok=True)
     template = load_template('.', 'template.html')
@@ -32,7 +35,7 @@ def render_pages():
             page_count=len(books),
             current_page=page_number
         )
-        with open(Path(folder, f'index{page_number}.html'), 'w', encoding="utf-8") as file:
+        with open(Path(folder, f'index{page_number}.html'), 'w', encoding='utf-8') as file:
             file.write(page)
 
 
