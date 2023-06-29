@@ -252,7 +252,7 @@ def get_command_line_arguments():
     """
 
     parser = argparse.ArgumentParser(
-        prog='tululu.py',
+        prog='parse_tululu.py',
         description='Downloading books.'
     )
     parser.add_argument(
@@ -272,7 +272,7 @@ def main():
     arguments = get_command_line_arguments()
     if arguments.start_id > arguments.end_id:
         print(f'Первый аргумент должен быть меньше второго.\n'
-              f'python tululu.py {arguments.end_id} {arguments.start_id}')
+              f'python parse_tululu.py {arguments.end_id} {arguments.start_id}')
         sys.exit()
     book_id = arguments.start_id
     progress_bar = (elem for elem in tqdm(range(arguments.end_id),

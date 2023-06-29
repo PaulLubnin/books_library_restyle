@@ -9,7 +9,7 @@ from bs4 import BeautifulSoup
 from pathvalidate import sanitize_filename
 from tqdm import tqdm
 
-from tululu import TULULU_URL, parse_url, get_book, get_content, save_json_file
+from parse_tululu import TULULU_URL, parse_url, get_book, get_content, save_json_file
 
 
 def parse_links_from_page(page: bytes, page_reference: str) -> list:
