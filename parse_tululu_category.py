@@ -9,7 +9,7 @@ from bs4 import BeautifulSoup
 from pathvalidate import sanitize_filename
 from tqdm import tqdm
 
-from parse_tululu import TULULU_URL, parse_url, get_book, get_content, save_json_file
+from parse_tululu import TULULU_URL, parse_url, get_book, get_content, save_json_file, get_command_line_arguments
 
 
 def parse_links_from_page(page: bytes, page_reference: str) -> list:
@@ -62,46 +62,6 @@ def get_links(start_page: int, end_page: int) -> list:
     return books_links
 
 
-def get_command_line_arguments():
-    """
-    Получение аргументов командной строки.
-
-    Returns:
-        Аргументы командной строки
-    """
-
-    parser = argparse.ArgumentParser(
-        prog='parse_tululu_category.py',
-        description='Downloading books by genre.'
-    )
-    parser.add_argument(
-        '-s', '--start_page', type=int, default=1,
-        help='Which page to start downloading.'
-    )
-    parser.add_argument(
-        '-e', '--end_page', type=int, default=702,
-        help='Last page to download.'
-    )
-    parser.add_argument(
-        '-df', '--dest_folder', type=str, default='media',
-        help='Path to directory with parsing results: pictures, books, JSON.'
-    )
-    parser.add_argument(
-        '-si', '--skip_imgs', action='store_true',
-        help="Don't download pictures."
-    )
-    parser.add_argument(
-        '-st', '--skip_txt', action='store_true',
-        help="Don't download books."
-    )
-    parser.add_argument(
-        '-j', '--json_path', type=str,
-        help='Specify your path to the *.json file with the results.'
-    )
-    args = parser.parse_args()
-    return args
-
-
 def main():
     """ Запуска скрипта. """
 
@@ -115,6 +75,9 @@ def main():
     skip_txt = arguments.skip_txt
     json_path = arguments.json_path if arguments.json_path else dest_folder
     Path(Path.cwd() / json_path).mkdir(parents=True, exist_ok=True)
+    if not arguments.dest_folder == 'media':
+        with open('.env', 'w+') as env_file:
+            env_file.write(f'FILE_FOLDER={json_path}')
     all_books_url = get_links(arguments.start_page, arguments.end_page)
     references_count = len(all_books_url)
     progress_bar = (elem for elem in tqdm(range(references_count),

@@ -1,14 +1,19 @@
 import json
+import os
 from pathlib import Path
 
+from dotenv import load_dotenv
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from livereload import Server
 from more_itertools import chunked
 
+load_dotenv()
+
 
 def get_books():
     """Открытие JSON файла."""
-    with open(Path('media', 'books.json'), 'r', encoding='utf-8') as file:
+    folder = os.getenv('FILE_FOLDER', 'media')
+    with open(Path(folder, 'books.json'), 'r', encoding='utf-8') as file:
         books = json.load(file)
     return books
 
