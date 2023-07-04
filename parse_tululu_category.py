@@ -75,7 +75,7 @@ def main():
     skip_txt = arguments.skip_txt
     json_path = arguments.json_path if arguments.json_path else dest_folder
     Path(Path.cwd() / json_path).mkdir(parents=True, exist_ok=True)
-    if not arguments.dest_folder == 'media':
+    if not arguments.json_path == 'media':
         with open('.env', 'w+') as env_file:
             env_file.write(f'FILE_FOLDER={json_path}')
     all_books_url = get_links(arguments.start_page, arguments.end_page)

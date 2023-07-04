@@ -50,10 +50,11 @@ def parse_url(url: str) -> dict:
                 'image_name': split_url.path.split('.')[0].split('/')[-1]}
 
 
-def parse_book_page(page: bytes, book_id: int) -> dict:
+def parse_book_page(page: bytes, book_id: int, dest_folder: str = 'media') -> dict:
     """ Функция парсит страницу книги.
 
     Args:
+        dest_folder: папка куда сохраняются файлы.
         page: Страница книги в текстовом формате.
         book_id: Идентификационный номер книги.
 
@@ -67,8 +68,8 @@ def parse_book_page(page: bytes, book_id: int) -> dict:
     cover = parse_url(cover_url)
     return {'title': book_title,
             'author': book_author,
-            'img_src': str(Path('covers', f'{cover.get("image_name")}{cover.get("extension")}')),
-            'book_path': str(Path('books', f'{book_title}.txt')),
+            'img_src': str(Path(dest_folder, 'covers', f'{cover.get("image_name")}{cover.get("extension")}')),
+            'book_path': str(Path(dest_folder, 'books', f'{book_title}.txt')),
             'genres': parse_book_genre(soup),
             'cover_url': cover_url,
             'comments': parse_book_comments(soup)}
@@ -231,7 +232,7 @@ def get_book(book_id: int,
 
     book_page_url = f'{TULULU_URL}/b{book_id}/'
     page_book = get_content(book_page_url)
-    book = parse_book_page(page_book, book_id)
+    book = parse_book_page(page_book, book_id, dest_folder)
     book_name = book.get('title')
     if not skip_txt:
         download_txt(book_id, f'{book_name}.txt', dest_folder)
@@ -296,7 +297,7 @@ def main():
     dest_folder = sanitize_filename(arguments.dest_folder)
     json_path = arguments.json_path if arguments.json_path else dest_folder
     Path(Path.cwd() / json_path).mkdir(parents=True, exist_ok=True)
-    if not arguments.dest_folder == 'media':
+    if not arguments.json_path == 'media':
         with open('.env', 'w+') as env_file:
             env_file.write(f'FILE_FOLDER={json_path}')
     progress_bar = (elem for elem in tqdm(range(arguments.end_page),

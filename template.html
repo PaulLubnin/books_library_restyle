@@ -74,7 +74,7 @@
                              style="margin: 0 0.5rem 0.5rem 0.5rem; width: 100%">
                             <div class="row">
                                 <div class="col">
-                                    <img src="../media/{{ book.img_src }}" class="card-img-top" alt="{{ book.title }}">
+                                    <img src="../{{ book.img_src }}" class="card-img-top" alt="{{ book.title }}">
                                 </div>
                                 <div class="col">
                                     <div class="card-body">
@@ -87,7 +87,7 @@
                                         {% endif %}
                                         <p class="card-text">
                                             <span class="text-muted">
-                                                <a href="../media/{{ book.book_path }}" target="_blank">Читать</a>
+                                                <a href="../{{ book.book_path }}" target="_blank">Читать</a>
                                             </span>
                                         </p>
                                     </div>
