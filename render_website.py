@@ -1,19 +1,25 @@
 import json
+import os
 from pathlib import Path
 
+from dotenv import load_dotenv
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from livereload import Server
 from more_itertools import chunked
 
+load_dotenv()
+
 
 def get_books():
-    with open(Path('media', 'books.json'), 'r', encoding='utf-8') as file:
-        books_json = file.read()
-    books = json.loads(books_json)
+    """Открытие JSON файла."""
+    folder = os.getenv('FILE_FOLDER', 'media')
+    with open(Path(folder, 'books.json'), 'r', encoding='utf-8') as file:
+        books = json.load(file)
     return books
 
 
 def load_template(path, name):
+    """Загрузка шаблона для рендеринга страниц."""
     env = Environment(
         loader=FileSystemLoader(path),
         autoescape=select_autoescape(['html', 'xml'])
@@ -22,6 +28,7 @@ def load_template(path, name):
 
 
 def render_pages():
+    """Рендеринг страниц библиотеки."""
     folder = Path.cwd() / 'pages'
     Path(folder).mkdir(parents=True, exist_ok=True)
     template = load_template('.', 'template.html')
@@ -33,9 +40,8 @@ def render_pages():
             page_count=len(books),
             current_page=page_number
         )
-        with open(Path(folder, f'index{page_number}.html'), 'w', encoding="utf-8") as file:
+        with open(Path(folder, f'index{page_number}.html'), 'w', encoding='utf-8') as file:
             file.write(page)
-    print('Site rebuilt.')
 
 
 if __name__ == '__main__':

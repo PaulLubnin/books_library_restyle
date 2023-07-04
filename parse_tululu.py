@@ -8,6 +8,7 @@ from urllib.parse import urljoin
 
 import requests
 from bs4 import BeautifulSoup
+from pathvalidate import sanitize_filename
 from tqdm import tqdm
 
 TULULU_URL = 'https://tululu.org'
@@ -49,10 +50,11 @@ def parse_url(url: str) -> dict:
                 'image_name': split_url.path.split('.')[0].split('/')[-1]}
 
 
-def parse_book_page(page: bytes, book_id: int) -> dict:
+def parse_book_page(page: bytes, book_id: int, dest_folder: str = 'media') -> dict:
     """ Функция парсит страницу книги.
 
     Args:
+        dest_folder: папка куда сохраняются файлы.
         page: Страница книги в текстовом формате.
         book_id: Идентификационный номер книги.
 
@@ -66,8 +68,8 @@ def parse_book_page(page: bytes, book_id: int) -> dict:
     cover = parse_url(cover_url)
     return {'title': book_title,
             'author': book_author,
-            'img_src': str(Path('covers', f'{cover.get("image_name")}{cover.get("extension")}')),
-            'book_path': str(Path('books', f'{book_title}.txt')),
+            'img_src': str(Path(dest_folder, 'covers', f'{cover.get("image_name")}{cover.get("extension")}')),
+            'book_path': str(Path(dest_folder, 'books', f'{book_title}.txt')),
             'genres': parse_book_genre(soup),
             'cover_url': cover_url,
             'comments': parse_book_comments(soup)}
@@ -230,7 +232,7 @@ def get_book(book_id: int,
 
     book_page_url = f'{TULULU_URL}/b{book_id}/'
     page_book = get_content(book_page_url)
-    book = parse_book_page(page_book, book_id)
+    book = parse_book_page(page_book, book_id, dest_folder)
     book_name = book.get('title')
     if not skip_txt:
         download_txt(book_id, f'{book_name}.txt', dest_folder)
@@ -252,17 +254,34 @@ def get_command_line_arguments():
     """
 
     parser = argparse.ArgumentParser(
-        prog='tululu.py',
+        prog='parse_tululu.py',
         description='Downloading books.'
     )
     parser.add_argument(
-        'start_id', type=int,
-        help='Which book to start downloading.')
+        '-s', '--start_page', type=int, default=1,
+        help='Which page to start downloading.'
+    )
     parser.add_argument(
-        'end_id', type=int,
-        help='Which book to download.')
+        '-e', '--end_page', type=int, default=702,
+        help='Last page to download.'
+    )
+    parser.add_argument(
+        '-df', '--dest_folder', type=str, default='media',
+        help='Path to directory with parsing results: pictures, books, JSON.'
+    )
+    parser.add_argument(
+        '-si', '--skip_imgs', action='store_true',
+        help="Don't download pictures."
+    )
+    parser.add_argument(
+        '-st', '--skip_txt', action='store_true',
+        help="Don't download books."
+    )
+    parser.add_argument(
+        '-j', '--json_path', type=str,
+        help='Specify your path to the *.json file with the results.'
+    )
     args = parser.parse_args()
-
     return args
 
 
@@ -270,20 +289,26 @@ def main():
     """ Запуска скрипта. """
 
     arguments = get_command_line_arguments()
-    if arguments.start_id > arguments.end_id:
+    if arguments.start_page > arguments.end_page:
         print(f'Первый аргумент должен быть меньше второго.\n'
-              f'python tululu.py {arguments.end_id} {arguments.start_id}')
+              f'python parse_tululu.py {arguments.end_page} {arguments.start_page}')
         sys.exit()
-    book_id = arguments.start_id
-    progress_bar = (elem for elem in tqdm(range(arguments.end_id),
+    book_id = arguments.start_page
+    dest_folder = sanitize_filename(arguments.dest_folder)
+    json_path = arguments.json_path if arguments.json_path else dest_folder
+    Path(Path.cwd() / json_path).mkdir(parents=True, exist_ok=True)
+    if not arguments.json_path == 'media':
+        with open('.env', 'w+') as env_file:
+            env_file.write(f'FILE_FOLDER={json_path}')
+    progress_bar = (elem for elem in tqdm(range(arguments.end_page),
                                           initial=1,
                                           bar_format='{l_bar}{n_fmt}/{total_fmt}',
                                           ncols=100))
     books = []
-    while arguments.end_id >= book_id:
+    while arguments.end_page >= book_id:
         successful_iteration = True
         try:
-            book = get_book(book_id)
+            book = get_book(book_id, dest_folder)
             books.append(book)
         except requests.HTTPError:
             print(f'\nПо заданному адресу книга номер {book_id} отсутствует', file=sys.stderr)
@@ -294,7 +319,7 @@ def main():
         if successful_iteration:
             book_id += 1
             progress_bar.__next__()
-    save_json_file(books)
+    save_json_file(books, json_path)
 
 
 if __name__ == '__main__':
