@@ -7,13 +7,12 @@ from jinja2 import Environment, FileSystemLoader, select_autoescape
 from livereload import Server
 from more_itertools import chunked
 
-load_dotenv()
-
 
 def get_books():
     """Открытие JSON файла."""
-    folder = os.getenv('FILE_FOLDER', 'media')
-    with open(Path(folder, 'books.json'), 'r', encoding='utf-8') as file:
+    folder = os.getenv('FOLDER_PATH', 'media')
+    file_name = os.getenv('FILE_NAME', 'books.json')
+    with open(Path(folder, file_name), 'r', encoding='utf-8') as file:
         books = json.load(file)
     return books
 
@@ -45,6 +44,7 @@ def render_pages():
 
 
 if __name__ == '__main__':
+    load_dotenv()
     server = Server()
     render_pages()
     server.watch('template.html', render_pages)

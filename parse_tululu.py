@@ -203,16 +203,17 @@ def check_for_redirect(response) -> None:
         raise requests.HTTPError
 
 
-def save_json_file(books: list, folder: str = 'media'):
+def save_json_file(books: list, file_name: str, folder: str = 'media'):
     """
     Сохраняет список из книг в JSON файл.
 
     Args:
+        file_name: назавние файла.
         books: список с книгами.
         folder: папка, куда сохранить JSON файл.
     """
 
-    with open(Path(folder, 'books.json'), 'a', encoding='utf-8') as file:
+    with open(Path(folder, file_name), 'a', encoding='utf-8') as file:
         json.dump(books, file, ensure_ascii=False)
 
 
@@ -295,11 +296,12 @@ def main():
         sys.exit()
     book_id = arguments.start_page
     dest_folder = sanitize_filename(arguments.dest_folder)
-    json_path = arguments.json_path if arguments.json_path else dest_folder
-    Path(Path.cwd() / json_path).mkdir(parents=True, exist_ok=True)
+    json_path = arguments.json_path.rpartition('/')[0] if arguments.json_path else dest_folder
+    json_name = arguments.json_path.rpartition('/')[-1]if arguments.json_path else 'books.json'
     if not arguments.json_path == 'media':
         with open('.env', 'w+') as env_file:
-            env_file.write(f'FILE_FOLDER={json_path}')
+            env_file.write(f'FOLDER_PATH={json_path}\nFILE_NAME={json_name}')
+    Path(Path.cwd() / json_path).mkdir(parents=True, exist_ok=True)
     progress_bar = (elem for elem in tqdm(range(arguments.end_page),
                                           initial=1,
                                           bar_format='{l_bar}{n_fmt}/{total_fmt}',
@@ -319,7 +321,7 @@ def main():
         if successful_iteration:
             book_id += 1
             progress_bar.__next__()
-    save_json_file(books, json_path)
+    save_json_file(books, json_name, json_path)
 
 
 if __name__ == '__main__':
